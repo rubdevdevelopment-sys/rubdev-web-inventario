@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import {
     Search, ShieldCheck, Wrench, Package,
     ArrowLeft, QrCode, RefreshCw, Undo2, Plus, X,
-    FileSpreadsheet
+    FileSpreadsheet, Lock, LogOut
 } from 'lucide-react';
 
 interface Activo {
@@ -27,6 +27,7 @@ interface Activo {
 }
 
 export default function InventarioDashboard() {
+    const [session, setSession] = useState<any>(null);
     const [activos, setActivos] = useState<Activo[]>([]);
     const [categorias, setCategorias] = useState<any[]>([]);
     const [funcionarios, setFuncionarios] = useState<any[]>([]);
@@ -53,6 +54,19 @@ export default function InventarioDashboard() {
     const [newEstado, setNewEstado] = useState('EN_SERVICIO');
     const [newNumDoc, setNewNumDoc] = useState('');
     const [newTipoDoc, setNewTipoDoc] = useState('TC');
+
+    // Validar Estado de Sesión en Supabase
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     // Cargar datos por lotes acumulativos
     const fetchActivos = async () => {
@@ -93,7 +107,7 @@ export default function InventarioDashboard() {
         }
     };
 
-    // Cargar Categorías y Funcionarios con filtro de unicidad
+    // Cargar Categorías y Funcionarios
     const fetchAuxiliares = async () => {
         const { data: catData } = await supabase.from('categorias').select('*').order('nombre');
         if (catData) {
@@ -122,6 +136,8 @@ export default function InventarioDashboard() {
     // Guardar Nuevo Activo
     const handleCrearActivo = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!session) return alert('Debes iniciar sesión como administrador.');
+
         setSavingNew(true);
 
         try {
@@ -132,7 +148,7 @@ export default function InventarioDashboard() {
                 .maybeSingle();
 
             if (placaExistente) {
-                alert(`⚠️ La placa "${newPlaca.trim()}" ya se encuentra registrada en el sistema.`);
+                alert(`⚠️ La placa "${newPlaca.trim()}" ya se encuentra registrada.`);
                 setSavingNew(false);
                 return;
             }
@@ -226,20 +242,41 @@ export default function InventarioDashboard() {
                             <span>Reporte por Responsable</span>
                         </Link>
 
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 text-xs bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl text-white transition shadow-lg shadow-blue-500/20"
-                        >
-                            <Plus className="w-4 h-4 shrink-0" />
-                            <span>Nuevo Activo</span>
-                        </button>
+                        {/* Si NO hay sesión, botón de Login; si SÍ hay sesión, botón de Nuevo Activo y Cerrar Sesión */}
+                        {!session ? (
+                            <Link
+                                href="/inventario/login"
+                                className="flex items-center justify-center gap-2 px-3.5 py-2 text-xs bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 font-semibold rounded-xl transition"
+                            >
+                                <Lock className="w-4 h-4 shrink-0" />
+                                <span>Acceso Admin</span>
+                            </Link>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 text-xs bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl text-white transition shadow-lg shadow-blue-500/20"
+                                >
+                                    <Plus className="w-4 h-4 shrink-0" />
+                                    <span>Nuevo Activo</span>
+                                </button>
+
+                                <button
+                                    onClick={() => supabase.auth.signOut()}
+                                    className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl transition"
+                                    title="Cerrar Sesión"
+                                >
+                                    <LogOut className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Salir</span>
+                                </button>
+                            </>
+                        )}
 
                         <button
                             onClick={fetchActivos}
                             className="flex items-center justify-center gap-2 px-3 py-2 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 transition"
                         >
                             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                            <span className="hidden sm:inline">Actualizar</span>
                         </button>
                     </div>
 
@@ -247,7 +284,7 @@ export default function InventarioDashboard() {
             </header>
 
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-                {/* Tarjetas de Métricas - Grid Responsivo */}
+                {/* Tarjetas de Métricas */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                     <div className="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl flex items-center gap-3 sm:gap-4">
                         <div className="p-2.5 sm:p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 shrink-0">
@@ -296,7 +333,7 @@ export default function InventarioDashboard() {
                     </button>
                 </div>
 
-                {/* Buscador y Controles de Filtro en Stack Móvil */}
+                {/* Buscador y Controles de Filtro */}
                 <div className="flex flex-col md:flex-row gap-3 sm:gap-4 mb-6">
                     <div className="relative flex-1">
                         <Search className="w-5 h-5 absolute left-3.5 top-3 text-slate-500" />
@@ -335,7 +372,7 @@ export default function InventarioDashboard() {
                     </div>
                 </div>
 
-                {/* Tabla con Desplazamiento Horizontal Seguro para Móviles */}
+                {/* Tabla de Activos */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="w-full overflow-x-auto">
                         <table className="w-full text-left text-sm min-w-[750px]">
@@ -405,8 +442,8 @@ export default function InventarioDashboard() {
                 </div>
             </main>
 
-            {/* Modal Registrar Nuevo Activo - Adaptable Móvil */}
-            {isCreateModalOpen && (
+            {/* Modal Registrar Nuevo Activo (Solo si está autenticado) */}
+            {session && isCreateModalOpen && (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
                     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-2xl w-full shadow-2xl my-8">
                         <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
@@ -604,7 +641,7 @@ export default function InventarioDashboard() {
                 </div>
             )}
 
-            {/* Pie de Página Institucional y Marca Registrada */}
+            {/* Pie de Página */}
             <footer className="w-full mt-auto py-6 border-t border-slate-800/80 bg-slate-950 text-slate-500 text-xs text-center print:hidden">
                 <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
                     <p className="font-medium">
