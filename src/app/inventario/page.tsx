@@ -242,7 +242,6 @@ export default function InventarioDashboard() {
                             <span>Reporte por Responsable</span>
                         </Link>
 
-                        {/* Si NO hay sesión, botón de Login; si SÍ hay sesión, botón de Nuevo Activo y Cerrar Sesión */}
                         {!session ? (
                             <Link
                                 href="/inventario/login"
@@ -372,30 +371,29 @@ export default function InventarioDashboard() {
                     </div>
                 </div>
 
-                {/* Tabla de Activos */}
+                {/* Tabla de Activos - Sin la Columna de Estado */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="w-full overflow-x-auto">
-                        <table className="w-full text-left text-sm min-w-[750px]">
+                        <table className="w-full text-left text-sm min-w-[650px]">
                             <thead className="bg-slate-950/80 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
                                 <tr>
                                     <th className="py-3.5 px-4">Placa / Código</th>
                                     <th className="py-3.5 px-4">Descripción del Activo</th>
                                     <th className="py-3.5 px-4">Categoría</th>
                                     <th className="py-3.5 px-4">Responsable / Custodio</th>
-                                    <th className="py-3.5 px-4">Estado</th>
                                     <th className="py-3.5 px-4 text-right">Acción</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800/60">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={6} className="py-12 text-center text-slate-500">
+                                        <td colSpan={5} className="py-12 text-center text-slate-500">
                                             Cargando inventario desde Supabase...
                                         </td>
                                     </tr>
                                 ) : filteredActivos.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="py-12 text-center text-slate-500">
+                                        <td colSpan={5} className="py-12 text-center text-slate-500">
                                             No se encontraron activos que coincidan con la búsqueda.
                                         </td>
                                     </tr>
@@ -406,7 +404,7 @@ export default function InventarioDashboard() {
                                                 <span className="font-mono font-bold text-blue-400 block">{activo.placa}</span>
                                                 <span className="text-xs text-slate-500">{activo.codigo_contable || 'S.C.'}</span>
                                             </td>
-                                            <td className="py-3.5 px-4 max-w-xs font-medium text-slate-200 truncate">
+                                            <td className="py-3.5 px-4 font-medium text-slate-200">
                                                 {activo.descripcion}
                                             </td>
                                             <td className="py-3.5 px-4 text-xs text-slate-400 whitespace-nowrap">
@@ -414,15 +412,6 @@ export default function InventarioDashboard() {
                                             </td>
                                             <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
                                                 {activo.funcionarios?.nombre_completo || 'Sin Asignar'}
-                                            </td>
-                                            <td className="py-3.5 px-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${activo.estado_activo === 'EN_SERVICIO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                        activo.estado_activo === 'DEVOLUCION' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                                                            'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                                    }`}>
-                                                    {activo.estado_activo === 'EN_SERVICIO' ? 'En Servicio' :
-                                                        activo.estado_activo === 'DEVOLUCION' ? 'Devolución' : 'Mantenimiento'}
-                                                </span>
                                             </td>
                                             <td className="py-3.5 px-4 text-right whitespace-nowrap">
                                                 <Link
@@ -442,7 +431,7 @@ export default function InventarioDashboard() {
                 </div>
             </main>
 
-            {/* Modal Registrar Nuevo Activo (Solo si está autenticado) */}
+            {/* Modal Registrar Nuevo Activo */}
             {session && isCreateModalOpen && (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
                     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-2xl w-full shadow-2xl my-8">
