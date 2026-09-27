@@ -99,47 +99,47 @@ export default function ReportePorResponsable() {
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col print:bg-white print:text-black">
-            {/* Header Institucional Superior Centrado y Más Grande */}
-            <div className="w-full bg-[#001f54] border-b border-slate-800 px-6 py-4 flex justify-center items-center">
+            {/* Header Institucional Superior Adaptable */}
+            <div className="w-full bg-[#001f54] border-b border-slate-800 px-4 sm:px-6 py-3 flex justify-center items-center print:hidden">
                 <img
                     src="/header-ejrlb.png"
                     alt="Rama Judicial - Escuela Judicial Rodrigo Lara Bonilla"
-                    className="h-14 md:h-20 object-contain mx-auto"
+                    className="h-9 sm:h-12 md:h-16 object-contain max-w-full"
                 />
             </div>
 
-            <header className="border-b border-slate-800 bg-slate-900 px-6 py-4 flex justify-between items-center print:hidden">
-                <div className="flex items-center gap-4">
-                    <Link href="/inventario" className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <header className="border-b border-slate-800 bg-slate-900 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 print:hidden">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <Link href="/inventario" className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="font-bold text-lg text-slate-100">Software de gestión de inventario - RubDev</h1>
+                        <h1 className="font-bold text-base sm:text-lg text-slate-100">RubDev Asset Manager</h1>
                         <p className="text-xs text-slate-400">Reporte Consolidado por Funcionario Responsable</p>
                     </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
                     <button
                         onClick={exportarAExcel}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-emerald-500/20"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-emerald-500/20"
                     >
-                        <FileSpreadsheet className="w-4 h-4" />
-                        Exportar a Excel (.xlsx)
+                        <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                        <span>Excel (.xlsx)</span>
                     </button>
                     <button
                         onClick={() => window.print()}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-blue-500/20"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-blue-500/20"
                     >
-                        <Printer className="w-4 h-4" />
-                        Imprimir Acta PDF
+                        <Printer className="w-4 h-4 shrink-0" />
+                        <span>Imprimir PDF</span>
                     </button>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto w-full p-8 flex-1">
+            <main className="max-w-7xl mx-auto w-full p-4 sm:p-8 flex-1">
                 {/* Selector de Funcionario */}
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-8 print:hidden">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 mb-6 sm:mb-8 print:hidden">
                     <label className="block text-xs font-medium text-slate-400 mb-2">
                         Seleccionar Funcionario Responsable:
                     </label>
@@ -171,44 +171,51 @@ export default function ReportePorResponsable() {
 
                 {/* Ficha e Impresión */}
                 {funcionarioActual && (
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl print:bg-white print:border-none print:shadow-none mb-8">
-
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl print:bg-white print:border-none print:shadow-none mb-8">
+                        {/* Header de impresión */}
+                        <div className="hidden print:block mb-6">
+                            <img
+                                src="/header-ejrlb.png"
+                                alt="Rama Judicial - Escuela Judicial Rodrigo Lara Bonilla"
+                                className="w-full h-auto object-contain"
+                            />
+                        </div>
 
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 print:border-slate-300 pb-6 mb-6 gap-4">
                             <div>
                                 <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 print:text-blue-700">
                                     Acta de Inventario Individual · RubDev Asset Manager
                                 </span>
-                                <h2 className="text-2xl font-bold text-slate-100 print:text-black mt-1">
+                                <h2 className="text-xl sm:text-2xl font-bold text-slate-100 print:text-black mt-1">
                                     {funcionarioActual.nombre_completo}
                                 </h2>
-                                <p className="text-sm text-slate-400 print:text-slate-600">
+                                <p className="text-xs sm:text-sm text-slate-400 print:text-slate-600">
                                     Dependencia: <strong className="text-slate-200 print:text-black">{funcionarioActual.dependencia || 'CONSEJO SUPERIOR DE LA JUDICATURA'}</strong>
                                 </p>
                             </div>
 
-                            <div className="flex gap-4 print:hidden">
-                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center min-w-[110px]">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full md:w-auto print:hidden">
+                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center">
                                     <p className="text-[10px] text-slate-400 uppercase">Total Ítems</p>
                                     <p className="text-lg font-bold text-blue-400">{totalItems}</p>
                                 </div>
-                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center min-w-[110px]">
+                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center">
                                     <p className="text-[10px] text-slate-400 uppercase">En Servicio</p>
                                     <p className="text-lg font-bold text-emerald-400">{enServicio}</p>
                                 </div>
-                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center min-w-[110px]">
+                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center">
                                     <p className="text-[10px] text-slate-400 uppercase">Devoluciones</p>
                                     <p className="text-lg font-bold text-rose-400">{devoluciones}</p>
                                 </div>
-                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center min-w-[140px]">
+                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center">
                                     <p className="text-[10px] text-slate-400 uppercase">Valor Total</p>
-                                    <p className="text-base font-bold text-slate-100">${valorTotal.toLocaleString('es-CO')}</p>
+                                    <p className="text-sm sm:text-base font-bold text-slate-100">${valorTotal.toLocaleString('es-CO')}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm print:text-xs">
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full text-left text-sm min-w-[700px] print:min-w-full print:text-xs">
                                 <thead className="bg-slate-950/80 print:bg-slate-100 text-slate-400 print:text-black text-xs uppercase tracking-wider border-b border-slate-800 print:border-slate-300">
                                     <tr>
                                         <th className="py-3 px-3">N°</th>
@@ -237,29 +244,29 @@ export default function ReportePorResponsable() {
                                         activosResponsable.map((item, idx) => (
                                             <tr key={item.id} className="hover:bg-slate-800/40 print:hover:bg-transparent">
                                                 <td className="py-3 px-3 text-slate-500 print:text-black">{idx + 1}</td>
-                                                <td className="py-3 px-3">
+                                                <td className="py-3 px-3 whitespace-nowrap">
                                                     <span className="font-mono font-bold text-blue-400 print:text-black block">{item.placa}</span>
                                                     <span className="text-[10px] text-slate-500 print:text-slate-600">{item.codigo_contable || 'S.C.'}</span>
                                                 </td>
                                                 <td className="py-3 px-3 font-medium text-slate-200 print:text-black max-w-xs">
                                                     {item.descripcion}
                                                 </td>
-                                                <td className="py-3 px-3 text-xs text-slate-400 print:text-slate-800">
+                                                <td className="py-3 px-3 text-xs text-slate-400 print:text-slate-800 whitespace-nowrap">
                                                     <div>{item.marca || 'N/A'} {item.modelo ? `- ${item.modelo}` : ''}</div>
                                                     <div className="font-mono text-[10px] text-slate-500 print:text-slate-600">S/N: {item.serie || 'S.S.'}</div>
                                                 </td>
-                                                <td className="py-3 px-3 text-xs text-slate-400 print:text-slate-800">
+                                                <td className="py-3 px-3 text-xs text-slate-400 print:text-slate-800 whitespace-nowrap">
                                                     {item.ubicacion_actual}
                                                 </td>
-                                                <td className="py-3 px-3">
+                                                <td className="py-3 px-3 whitespace-nowrap">
                                                     <span className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-medium ${item.estado_activo === 'EN_SERVICIO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 print:bg-transparent print:text-black' :
-                                                        item.estado_activo === 'DEVOLUCION' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20 print:bg-transparent print:text-black' :
-                                                            'bg-amber-500/10 text-amber-400 border border-amber-500/20 print:bg-transparent print:text-black'
+                                                            item.estado_activo === 'DEVOLUCION' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20 print:bg-transparent print:text-black' :
+                                                                'bg-amber-500/10 text-amber-400 border border-amber-500/20 print:bg-transparent print:text-black'
                                                         }`}>
                                                         {item.estado_activo === 'DEVOLUCION' ? 'Devolución' : item.estado_activo}
                                                     </span>
                                                 </td>
-                                                <td className="py-3 px-3 text-right font-mono text-slate-300 print:text-black">
+                                                <td className="py-3 px-3 text-right font-mono text-slate-300 print:text-black whitespace-nowrap">
                                                     ${(item.valor || 0).toLocaleString('es-CO')}
                                                 </td>
                                             </tr>

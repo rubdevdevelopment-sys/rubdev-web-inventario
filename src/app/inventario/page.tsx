@@ -195,107 +195,109 @@ export default function InventarioDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-            {/* Header Institucional Superior Centrado y Más Grande */}
-            <div className="w-full bg-[#001f54] border-b border-slate-800 px-6 py-4 flex justify-center items-center">
+            {/* Header Institucional Superior Adaptable */}
+            <div className="w-full bg-[#001f54] border-b border-slate-800 px-4 sm:px-6 py-3 flex justify-center items-center">
                 <img
                     src="/header-ejrlb.png"
                     alt="Rama Judicial - Escuela Judicial Rodrigo Lara Bonilla"
-                    className="h-14 md:h-20 object-contain mx-auto"
+                    className="h-9 sm:h-12 md:h-16 object-contain max-w-full"
                 />
             </div>
 
-            <header className="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-40 backdrop-blur">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <header className="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-40 backdrop-blur">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+
+                    <div className="flex items-center justify-between w-full md:w-auto gap-3">
+                        <Link href="/" className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0">
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
-                        <div>
-                            <h1 className="font-bold text-lg text-slate-100">Software de gestión de inventario - RubDev</h1>
-                            <p className="text-xs text-slate-400">Gestión de Activos e Inventarios</p>
+                        <div className="text-left">
+                            <h1 className="font-extrabold text-lg sm:text-2xl text-slate-100 tracking-tight">Software de gestión de inventario - RubDev</h1>
+                            <p className="text-xs text-blue-400 font-medium">Gestión de Activos e Inventarios</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 w-full md:w-auto">
                         <Link
                             href="/inventario/reporte"
-                            className="flex items-center gap-2 px-3.5 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl text-white transition shadow-lg shadow-emerald-500/20"
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl text-white transition shadow-lg shadow-emerald-500/20"
                         >
-                            <FileSpreadsheet className="w-4 h-4" />
-                            Reporte por Responsable
+                            <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                            <span>Reporte por Responsable</span>
                         </Link>
 
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-2 px-3.5 py-2 text-xs bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl text-white transition shadow-lg shadow-blue-500/20"
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 text-xs bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl text-white transition shadow-lg shadow-blue-500/20"
                         >
-                            <Plus className="w-4 h-4" />
-                            Nuevo Activo
+                            <Plus className="w-4 h-4 shrink-0" />
+                            <span>Nuevo Activo</span>
                         </button>
 
                         <button
                             onClick={fetchActivos}
-                            className="flex items-center gap-2 px-3 py-2 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 transition"
+                            className="flex items-center justify-center gap-2 px-3 py-2 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 transition"
                         >
                             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                            Actualizar
+                            <span className="hidden sm:inline">Actualizar</span>
                         </button>
                     </div>
+
                 </div>
             </header>
 
-            <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-                {/* Tarjetas de Métricas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center gap-4">
-                        <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
-                            <Package className="w-6 h-6" />
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                {/* Tarjetas de Métricas - Grid Responsivo */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                    <div className="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl flex items-center gap-3 sm:gap-4">
+                        <div className="p-2.5 sm:p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 shrink-0">
+                            <Package className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-400 font-medium">Total Activos</p>
-                            <p className="text-2xl font-bold text-slate-100">{totalActivos}</p>
+                            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Total Activos</p>
+                            <p className="text-xl sm:text-2xl font-bold text-slate-100">{totalActivos}</p>
                         </div>
                     </div>
 
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center gap-4">
-                        <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
-                            <ShieldCheck className="w-6 h-6" />
+                    <div className="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl flex items-center gap-3 sm:gap-4">
+                        <div className="p-2.5 sm:p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 shrink-0">
+                            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-400 font-medium">En Servicio</p>
-                            <p className="text-2xl font-bold text-emerald-400">{enServicio}</p>
+                            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">En Servicio</p>
+                            <p className="text-xl sm:text-2xl font-bold text-emerald-400">{enServicio}</p>
                         </div>
                     </div>
 
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center gap-4">
-                        <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
-                            <Wrench className="w-6 h-6" />
+                    <div className="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl flex items-center gap-3 sm:gap-4">
+                        <div className="p-2.5 sm:p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20 shrink-0">
+                            <Wrench className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-400 font-medium">En Mantenimiento</p>
-                            <p className="text-2xl font-bold text-amber-400">{enMantenimiento}</p>
+                            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">En Mantenimiento</p>
+                            <p className="text-xl sm:text-2xl font-bold text-amber-400">{enMantenimiento}</p>
                         </div>
                     </div>
 
                     <button
-                        onClick={() => setEstadoFilter('DEVOLUCION')}
-                        className={`p-5 rounded-2xl border text-left transition flex items-center gap-4 ${estadoFilter === 'DEVOLUCION'
-                            ? 'bg-rose-500/20 border-rose-500 text-rose-300 ring-2 ring-rose-500/30'
-                            : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                        onClick={() => setEstadoFilter(estadoFilter === 'DEVOLUCION' ? 'TODOS' : 'DEVOLUCION')}
+                        className={`p-4 sm:p-5 rounded-2xl border text-left transition flex items-center gap-3 sm:gap-4 ${estadoFilter === 'DEVOLUCION'
+                                ? 'bg-rose-500/20 border-rose-500 text-rose-300 ring-2 ring-rose-500/30'
+                                : 'bg-slate-900 border-slate-800 hover:border-slate-700'
                             }`}
                     >
-                        <div className="p-3 bg-rose-500/10 text-rose-400 rounded-xl border border-rose-500/20">
-                            <Undo2 className="w-6 h-6" />
+                        <div className="p-2.5 sm:p-3 bg-rose-500/10 text-rose-400 rounded-xl border border-rose-500/20 shrink-0">
+                            <Undo2 className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-400 font-medium">Devoluciones</p>
-                            <p className="text-2xl font-bold text-rose-400">{devoluciones}</p>
+                            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Devoluciones</p>
+                            <p className="text-xl sm:text-2xl font-bold text-rose-400">{devoluciones}</p>
                         </div>
                     </button>
                 </div>
 
-                {/* Buscador y Controles de Filtro */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                {/* Buscador y Controles de Filtro en Stack Móvil */}
+                <div className="flex flex-col md:flex-row gap-3 sm:gap-4 mb-6">
                     <div className="relative flex-1">
                         <Search className="w-5 h-5 absolute left-3.5 top-3 text-slate-500" />
                         <input
@@ -307,35 +309,37 @@ export default function InventarioDashboard() {
                         />
                     </div>
 
-                    <select
-                        value={estadoFilter}
-                        onChange={(e) => setEstadoFilter(e.target.value)}
-                        className="px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-300 focus:outline-none focus:border-blue-500 transition"
-                    >
-                        <option value="TODOS">Todos los Estados</option>
-                        <option value="EN_SERVICIO">En Servicio</option>
-                        <option value="MANTENIMIENTO">En Mantenimiento</option>
-                        <option value="DEVOLUCION">Devoluciones</option>
-                        <option value="ALMACEN">En Almacén</option>
-                    </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:w-auto">
+                        <select
+                            value={estadoFilter}
+                            onChange={(e) => setEstadoFilter(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-300 focus:outline-none focus:border-blue-500 transition"
+                        >
+                            <option value="TODOS">Todos los Estados</option>
+                            <option value="EN_SERVICIO">En Servicio</option>
+                            <option value="MANTENIMIENTO">En Mantenimiento</option>
+                            <option value="DEVOLUCION">Devoluciones</option>
+                            <option value="ALMACEN">En Almacén</option>
+                        </select>
 
-                    <select
-                        value={categoriaFilter}
-                        onChange={(e) => setCategoriaFilter(e.target.value)}
-                        className="px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-300 focus:outline-none focus:border-blue-500 transition"
-                    >
-                        <option value="TODAS">Todas las Categorías</option>
-                        {categorias.map(c => (
-                            <option key={c.id} value={c.nombre}>{c.nombre}</option>
-                        ))}
-                    </select>
+                        <select
+                            value={categoriaFilter}
+                            onChange={(e) => setCategoriaFilter(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-300 focus:outline-none focus:border-blue-500 transition"
+                        >
+                            <option value="TODAS">Todas las Categorías</option>
+                            {categorias.map(c => (
+                                <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
-                {/* Tabla de Activos */}
+                {/* Tabla con Desplazamiento Horizontal Seguro para Móviles */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-950/60 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full text-left text-sm min-w-[750px]">
+                            <thead className="bg-slate-950/80 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
                                 <tr>
                                     <th className="py-3.5 px-4">Placa / Código</th>
                                     <th className="py-3.5 px-4">Descripción del Activo</th>
@@ -361,29 +365,29 @@ export default function InventarioDashboard() {
                                 ) : (
                                     filteredActivos.map((activo) => (
                                         <tr key={activo.id} className="hover:bg-slate-800/40 transition">
-                                            <td className="py-3.5 px-4">
+                                            <td className="py-3.5 px-4 whitespace-nowrap">
                                                 <span className="font-mono font-bold text-blue-400 block">{activo.placa}</span>
                                                 <span className="text-xs text-slate-500">{activo.codigo_contable || 'S.C.'}</span>
                                             </td>
                                             <td className="py-3.5 px-4 max-w-xs font-medium text-slate-200 truncate">
                                                 {activo.descripcion}
                                             </td>
-                                            <td className="py-3.5 px-4 text-xs text-slate-400">
+                                            <td className="py-3.5 px-4 text-xs text-slate-400 whitespace-nowrap">
                                                 {activo.categorias?.nombre || 'General'}
                                             </td>
-                                            <td className="py-3.5 px-4 text-slate-300">
+                                            <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
                                                 {activo.funcionarios?.nombre_completo || 'Sin Asignar'}
                                             </td>
-                                            <td className="py-3.5 px-4">
+                                            <td className="py-3.5 px-4 whitespace-nowrap">
                                                 <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${activo.estado_activo === 'EN_SERVICIO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                    activo.estado_activo === 'DEVOLUCION' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                                                        'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                                        activo.estado_activo === 'DEVOLUCION' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                                                            'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                                     }`}>
                                                     {activo.estado_activo === 'EN_SERVICIO' ? 'En Servicio' :
                                                         activo.estado_activo === 'DEVOLUCION' ? 'Devolución' : 'Mantenimiento'}
                                                 </span>
                                             </td>
-                                            <td className="py-3.5 px-4 text-right">
+                                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
                                                 <Link
                                                     href={`/inventario/${encodeURIComponent(activo.placa)}`}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-medium transition"
@@ -401,12 +405,12 @@ export default function InventarioDashboard() {
                 </div>
             </main>
 
-            {/* Modal Registrar Nuevo Activo */}
+            {/* Modal Registrar Nuevo Activo - Adaptable Móvil */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full shadow-2xl my-8">
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-2xl w-full shadow-2xl my-8">
                         <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
-                            <h3 className="text-lg font-bold text-slate-100">Registrar Nuevo Activo en Inventario</h3>
+                            <h3 className="text-base sm:text-lg font-bold text-slate-100">Registrar Nuevo Activo en Inventario</h3>
                             <button
                                 onClick={() => setIsCreateModalOpen(false)}
                                 className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200"
@@ -453,7 +457,7 @@ export default function InventarioDashboard() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-xs font-medium text-slate-400 mb-1">Marca</label>
                                     <input
@@ -541,7 +545,7 @@ export default function InventarioDashboard() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-xs font-medium text-slate-400 mb-1">Estado del Activo</label>
                                     <select
