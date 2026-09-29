@@ -324,6 +324,7 @@ export default function HojaDeVidaActivo() {
                                     onChange={(e) => setTipoMovimiento(e.target.value)}
                                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
                                 >
+                                    <option value="CONFIRMADO">Confirmado</option>
                                     <option value="TRASLADO">Traslado de Ubicación</option>
                                     <option value="CAMBIO_RESPONSABLE">Cambio de Responsable / Custodia</option>
                                     <option value="MANTENIMIENTO">Ingreso a Mantenimiento</option>
@@ -365,6 +366,7 @@ export default function HojaDeVidaActivo() {
                                     onChange={(e) => setNuevoEstado(e.target.value)}
                                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
                                 >
+                                    <option value="CONFIRMADO">Confirmado</option>
                                     <option value="EN_SERVICIO">En Servicio</option>
                                     <option value="MANTENIMIENTO">En Mantenimiento</option>
                                     <option value="PROCESO_DEVOLUCION">Proceso de Devolución</option>

@@ -380,9 +380,11 @@ export default function InventarioDashboard() {
                             className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-300 focus:outline-none focus:border-blue-500 transition"
                         >
                             <option value="TODOS">Todos los Estados</option>
+                            <option value="CONFIRMADO">Confirmado</option>
                             <option value="EN_SERVICIO">En Servicio</option>
                             <option value="MANTENIMIENTO">En Mantenimiento</option>
                             <option value="DEVOLUCION">Devoluciones</option>
+                            <option value="PROCESO_DEVOLUCION">Proceso de Devolución</option>
                             <option value="ALMACEN">En Almacén</option>
                         </select>
 
