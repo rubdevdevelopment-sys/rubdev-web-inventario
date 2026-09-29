@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: "/inventarioescuela",
+  /* Sin basePath global para permitir subrutas independientes como /autos e /inventarioescuela */
 };
 
 export default nextConfig;

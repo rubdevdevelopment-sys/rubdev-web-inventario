@@ -17,7 +17,6 @@ function FormularioLoginContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Si el usuario ya tiene sesión iniciada, redirigir inmediatamente
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         router.push(nextParam);
@@ -36,9 +35,11 @@ function FormularioLoginContent() {
     });
 
     if (error) {
-      setErrorMessage(error.message === 'Invalid login credentials' 
-        ? 'Credenciales incorrectas. Verifica tu correo y contraseña.' 
-        : error.message);
+      setErrorMessage(
+        error.message === 'Invalid login credentials' 
+          ? 'Credenciales incorrectas. Verifica tu correo institucional y contraseña.' 
+          : error.message
+      );
       setLoading(false);
     } else if (data.session) {
       router.push(nextParam);
@@ -53,7 +54,7 @@ function FormularioLoginContent() {
         </div>
         <h2 className="text-2xl font-black text-white tracking-wide">Acceso Administrador</h2>
         <p className="text-xs text-slate-400">
-          Ingresa tus credenciales autorizadas de RubDev para gestionar el inventario y catálogo de autos.
+          Ingresa tus credenciales autorizadas de RubDev para gestionar la plataforma.
         </p>
       </div>
 
@@ -73,7 +74,7 @@ function FormularioLoginContent() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@rubdev.net"
+              placeholder="usuario@ramajudicial.gov.co"
               required
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500"
             />
@@ -111,9 +112,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4 font-sans relative">
       <div className="absolute top-6 left-6">
-        <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition">
+        <Link href="/inventarioescuela" className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition">
           <ArrowLeft className="w-4 h-4" />
-          Volver al Inicio
+          Volver a Inventario
         </Link>
       </div>
 
