@@ -221,24 +221,32 @@ export default function CatalogoAutos() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Topbar Navigation */}
-      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <Link href="/inventarioescuela" className="text-slate-400 hover:text-white transition">
+      
+      {/* Topbar Navigation Con Ícono Diferenciador */}
+      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+          <Link href="/" className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div className="flex items-center gap-2">
-            <Car className="w-6 h-6 text-red-500" />
-            <h1 className="text-lg font-bold tracking-wider text-white">
-              RubDev <span className="text-red-500">AutoCollection</span>
-            </h1>
+          
+          {/* Avatar con Ícono Rojo de Carro + Título del Módulo */}
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-red-500/10 text-red-500 rounded-2xl border border-red-500/20 shrink-0">
+              <Car className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-white">
+                RubDev <span className="text-red-500">AutoCollection</span>
+              </h1>
+              <p className="text-xs text-red-400 font-medium">Catálogo Maestro & Colección de Vehículos</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={fetchData}
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition"
+            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700"
             title="Recargar Catálogo"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -246,19 +254,19 @@ export default function CatalogoAutos() {
 
           <Link
             href="/autos/mi-coleccion"
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition"
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition"
           >
             <BookmarkCheck className="w-4 h-4 text-red-400" />
-            Mi Vitrina ({misAutos.filter(a => a.estado === 'ADQUIRIDO').length})
+            <span>Mi Vitrina ({misAutos.filter(a => a.estado === 'ADQUIRIDO').length})</span>
           </Link>
 
           {!session ? (
             <Link
               href="/inventarioescuela/login?next=/autos"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition"
             >
               <Lock className="w-3.5 h-3.5" />
-              Acceso Admin
+              <span>Acceso Admin</span>
             </Link>
           ) : (
             <button
@@ -266,27 +274,27 @@ export default function CatalogoAutos() {
               className="flex items-center gap-1.5 px-3 py-2 text-xs bg-slate-800 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 rounded-xl transition"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Salir ({session.user.email?.split('@')[0]})
+              <span className="hidden sm:inline">Salir ({session.user.email?.split('@')[0]})</span>
             </button>
           )}
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto w-full p-6 space-y-8 flex-1">
+      <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6 sm:space-y-8 flex-1">
         {/* Banner Presentación */}
-        <div className="bg-gradient-to-r from-slate-900 via-red-950/20 to-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="bg-gradient-to-r from-slate-900 via-red-950/20 to-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
             <span className="text-xs font-bold text-red-500 uppercase tracking-widest">
               Catálogo Maestro Precargado
             </span>
-            <h2 className="text-3xl font-extrabold text-white mt-1">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
               Autos Icónicos del Mundo & Cine
             </h2>
-            <p className="text-sm text-slate-400 max-w-2xl mt-2">
+            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mt-2 leading-relaxed">
               Explora la historia real, películas, series y cómics. Registra, sube o edita las fotografías reales de tus piezas en la vitrina.
             </p>
           </div>
-          <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl text-center shrink-0 min-w-[200px]">
+          <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl text-center shrink-0 w-full md:w-auto min-w-[200px]">
             <p className="text-xs text-slate-400 uppercase font-semibold">Modelos Disponibles</p>
             <p className="text-3xl font-black text-red-500 mt-1">{catalogo.length}</p>
           </div>
@@ -295,13 +303,13 @@ export default function CatalogoAutos() {
         {/* Buscador & Filtros */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-2xl">
           <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
             <input
               type="text"
               placeholder="Buscar auto o película (ej. DeLorean, Batman)..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
             />
           </div>
 
@@ -350,7 +358,7 @@ export default function CatalogoAutos() {
                           alt={auto.modelo_nombre} 
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
-                        <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur px-2 py-1 rounded-lg text-[10px] text-emerald-400 border border-emerald-500/30">
+                        <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur px-2 py-1 rounded-lg text-[10px] text-emerald-400 border border-emerald-500/30 font-medium">
                           Foto de Mi Pieza
                         </div>
                       </div>
@@ -455,8 +463,8 @@ export default function CatalogoAutos() {
 
       {/* Modal Inteligente (Solo si hay sesión activa) */}
       {session && selectedAuto && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 my-8">
             <h3 className="text-lg font-bold text-white">
               {existingRecordId ? 'Editar Registro:' : 'Registrar / Cargar Foto:'}{' '}
               <span className="text-red-500">{selectedAuto.modelo_nombre}</span>
@@ -578,14 +586,14 @@ export default function CatalogoAutos() {
                 <button
                   type="button"
                   onClick={() => { setSelectedAuto(null); setSelectedFile(null); setImagePreview(null); }}
-                  className="flex-1 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-700"
+                  className="flex-1 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-700 transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-medium hover:bg-red-500"
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-medium hover:bg-red-500 transition shadow-lg shadow-red-500/20"
                 >
                   {saving ? 'Guardando...' : existingRecordId ? 'Actualizar Datos' : 'Confirmar & Guardar'}
                 </button>
@@ -594,6 +602,18 @@ export default function CatalogoAutos() {
           </div>
         </div>
       )}
+
+      {/* Pie de Página */}
+      <footer className="w-full mt-auto py-6 border-t border-slate-800/80 bg-slate-950 text-slate-500 text-xs text-center print:hidden">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+          <p className="font-medium">
+            RubDev AutoCollection · Catálogo & Vitrina de Vehículos de Colección
+          </p>
+          <p className="font-mono text-[11px] text-slate-400">
+            © {new Date().getFullYear()} <strong className="text-slate-200">RubDev.net</strong> ®. Todos los derechos reservados.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

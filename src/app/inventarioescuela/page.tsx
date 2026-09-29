@@ -211,6 +211,7 @@ export default function InventarioDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+            
             {/* Header Institucional Superior Adaptable */}
             <div className="w-full bg-[#001f54] border-b border-slate-800 px-4 sm:px-6 py-3 flex justify-center items-center">
                 <img
@@ -227,9 +228,18 @@ export default function InventarioDashboard() {
                         <Link href="/" className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0">
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
-                        <div className="text-left">
-                            <h1 className="font-extrabold text-lg sm:text-2xl text-slate-100 tracking-tight">Software de gestión de inventario - RubDev</h1>
-                            <p className="text-xs text-blue-400 font-medium">Gestión de Activos e Inventarios</p>
+                        
+                        {/* Ícono de Paquete + Título del Módulo */}
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20 shrink-0">
+                                <Package className="w-6 h-6" />
+                            </div>
+                            <div className="text-left">
+                                <h1 className="font-extrabold text-lg sm:text-2xl text-slate-100 tracking-tight">
+                                    Software de gestión de inventario
+                                </h1>
+                                <p className="text-xs text-blue-400 font-medium">Escuela Judicial "Rodrigo Lara Bonilla"</p>
+                            </div>
                         </div>
                     </div>
 
