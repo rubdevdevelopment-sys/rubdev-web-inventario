@@ -1,129 +1,131 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Lock, Mail, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Lock, ArrowLeft, KeyRound, Mail, ShieldAlert } from 'lucide-react';
 
-export default function LoginPage() {
+function FormularioLoginContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get('next') || '/inventarioescuela';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  // Obtener la ruta de retorno si viene de autos, o enviar a inventario por defecto
-  const nextPath = searchParams.get('next') || '/inventario';
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Si el usuario ya tiene sesión iniciada, redirigir inmediatamente
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.push(nextParam);
+      }
+    });
+  }, [router, nextParam]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg('');
+    setErrorMessage(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: password,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
     if (error) {
-      setErrorMsg('Credenciales inválidas. Verifique su correo institucional y contraseña.');
+      setErrorMessage(error.message === 'Invalid login credentials' 
+        ? 'Credenciales incorrectas. Verifica tu correo y contraseña.' 
+        : error.message);
       setLoading(false);
-    } else {
-      // 📍 REDIRECCIÓN DINÁMICA: Vuelve a la página que solicitó el inicio de sesión
-      router.push(nextPath);
-      router.refresh();
+    } else if (data.session) {
+      router.push(nextParam);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between items-center p-4">
-      {/* Header Institucional */}
-      <div className="w-full max-w-md py-4 text-center">
-        <img 
-          src="/header-ejrlb.png" 
-          alt="Escuela Judicial Rodrigo Lara Bonilla" 
-          className="h-12 object-contain mx-auto mb-2"
-        />
+    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+      <div className="text-center space-y-2">
+        <div className="inline-flex p-3 bg-red-500/10 text-red-500 rounded-2xl border border-red-500/20 mb-2">
+          <Lock className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-black text-white tracking-wide">Acceso Administrador</h2>
+        <p className="text-xs text-slate-400">
+          Ingresa tus credenciales autorizadas de RubDev para gestionar el inventario y catálogo de autos.
+        </p>
       </div>
 
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3 text-blue-400">
-            <Lock className="w-6 h-6" />
+      {errorMessage && (
+        <div className="bg-rose-950/40 border border-rose-500/30 p-3 rounded-xl text-xs text-rose-400 flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1">Correo Electrónico</label>
+          <div className="relative">
+            <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@rubdev.net"
+              required
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500"
+            />
           </div>
-          <h1 className="text-xl font-bold text-slate-100">Acceso Administrativo</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Plataforma Unificada de Gestión RubDev
-          </p>
         </div>
 
-        {errorMsg && (
-          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs text-center font-medium">
-            {errorMsg}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1">Contraseña</label>
+          <div className="relative">
+            <KeyRound className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500"
+            />
           </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Correo Electrónico / Institucional
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@cendoj.ramajudicial.gov.co"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Contraseña
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 mt-2"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            {loading ? 'Verificando Acceso...' : 'Iniciar Sesión'}
-          </button>
-        </form>
-
-        <div className="mt-6 pt-4 border-t border-slate-800 text-center">
-          <button
-            onClick={() => router.push(nextPath)}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Volver a la vista previa
-          </button>
         </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl text-xs transition shadow-lg shadow-red-600/20 mt-2"
+        >
+          {loading ? 'Verificando...' : 'Iniciar Sesión Admin'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4 font-sans relative">
+      <div className="absolute top-6 left-6">
+        <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition">
+          <ArrowLeft className="w-4 h-4" />
+          Volver al Inicio
+        </Link>
       </div>
 
-      <footer className="py-4 text-center text-[11px] text-slate-500 font-mono">
-        © {new Date().getFullYear()} <strong>RubDev.net</strong> ®. Todos los derechos reservados.
-      </footer>
+      <div className="max-w-md w-full">
+        <Suspense fallback={
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center text-slate-500 text-xs">
+            Cargando módulo de seguridad...
+          </div>
+        }>
+          <FormularioLoginContent />
+        </Suspense>
+      </div>
     </div>
   );
 }
