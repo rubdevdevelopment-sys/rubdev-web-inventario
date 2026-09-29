@@ -320,6 +320,7 @@ export default function CatalogoAutos() {
               { id: 'ANIME_COMIC', label: '⚡ Ánime & Cómics' },
               { id: 'ICONO_HISTORICO', label: '📜 Históricos' },
               { id: 'SUPERDEPORTIVO', label: '🏎️ Superdeportivos' }
+              { id: 'CLASICOS', label: '🚗 Clásicos Colombianos' },
             ].map((f) => (
               <button
                 key={f.id}
