@@ -68,7 +68,7 @@ export default function InventarioDashboard() {
         return () => subscription.unsubscribe();
     }, []);
 
-    // Cargar datos por lotes acumulativos
+    // Cargar datos por lotes acumulativos (Paginación de 1000)
     const fetchActivos = async () => {
         setLoading(true);
         let todosLosActivos: Activo[] = [];
@@ -235,7 +235,7 @@ export default function InventarioDashboard() {
 
                     <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 w-full md:w-auto">
                         <Link
-                            href="/inventario/reporte"
+                            href="/inventarioescuela/reporte"
                             className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl text-white transition shadow-lg shadow-emerald-500/20"
                         >
                             <FileSpreadsheet className="w-4 h-4 shrink-0" />
@@ -244,7 +244,7 @@ export default function InventarioDashboard() {
 
                         {!session ? (
                             <Link
-                                href="/inventario/login"
+                                href="/inventarioescuela/login?next=/inventarioescuela"
                                 className="flex items-center justify-center gap-2 px-3.5 py-2 text-xs bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 font-semibold rounded-xl transition"
                             >
                                 <Lock className="w-4 h-4 shrink-0" />
@@ -371,7 +371,7 @@ export default function InventarioDashboard() {
                     </div>
                 </div>
 
-                {/* Tabla de Activos - Sin la Columna de Estado */}
+                {/* Tabla de Activos */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="w-full overflow-x-auto">
                         <table className="w-full text-left text-sm min-w-[650px]">
@@ -415,7 +415,7 @@ export default function InventarioDashboard() {
                                             </td>
                                             <td className="py-3.5 px-4 text-right whitespace-nowrap">
                                                 <Link
-                                                    href={`/inventario/${encodeURIComponent(activo.placa)}`}
+                                                    href={`/inventarioescuela/${encodeURIComponent(activo.placa)}`}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-medium transition"
                                                 >
                                                     <QrCode className="w-3.5 h-3.5" />
