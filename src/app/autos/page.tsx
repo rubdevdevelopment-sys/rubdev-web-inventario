@@ -318,8 +318,9 @@ export default function CatalogoAutos() {
               { id: 'TODOS', label: 'Todos' },
               { id: 'CINE_TV', label: '🎬 Cine & TV' },
               { id: 'ANIME_COMIC', label: '⚡ Ánime & Cómics' },
-              { id: 'ICONO_HISTORICO', label: '📜 Históricos de Colombia' },
-              { id: 'SUPERDEPORTIVO', label: '🏎️ Superdeportivos' }
+              { id: 'ICONO_HISTORICO', label: '📜 Históricos' },
+              { id: 'SUPERDEPORTIVO', label: '🏎️ Superdeportivos' },
+              { id: 'CLASICOS_COLOMBIA', label: '🚗 Clásicos Colombianos' }
             ].map((f) => (
               <button
                 key={f.id}
