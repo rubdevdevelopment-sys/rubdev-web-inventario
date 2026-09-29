@@ -438,7 +438,7 @@ export default function CatalogoAutos() {
                       </>
                     ) : (
                       <Link
-                        href="/inventario/login?next=/autos"
+                        href="/inventarioescuela/login?next=/autos"
                         className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-medium rounded-xl transition flex items-center justify-center gap-2"
                       >
                         <Lock className="w-3.5 h-3.5 text-amber-500" />
