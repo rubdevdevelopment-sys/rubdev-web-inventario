@@ -146,7 +146,7 @@ export default function HojaDeVidaActivo() {
 
             {/* Topbar no imprimible */}
             <div className="border-b border-slate-800 bg-slate-900 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 print:hidden">
-                <Link href="/inventario" className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
+                <Link href="/inventarioescuela" className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
                     <ArrowLeft className="w-4 h-4" />
                     Volver al Inventario
                 </Link>
