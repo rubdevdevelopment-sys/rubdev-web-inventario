@@ -254,7 +254,7 @@ export default function CatalogoAutos() {
 
           {!session ? (
             <Link
-              href="/inventario/login?next=/autos"
+              href="/inventarioescuela/login?next=/autos"
               className="flex items-center gap-1.5 px-3 py-2 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition"
             >
               <Lock className="w-3.5 h-3.5" />
