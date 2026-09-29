@@ -327,7 +327,9 @@ export default function HojaDeVidaActivo() {
                                     <option value="TRASLADO">Traslado de Ubicación</option>
                                     <option value="CAMBIO_RESPONSABLE">Cambio de Responsable / Custodia</option>
                                     <option value="MANTENIMIENTO">Ingreso a Mantenimiento</option>
+                                    <option value="PROCESO_DEVOLUCION">Proceso de Devolución</option>
                                     <option value="DEVOLUCION">Registrar Devolución</option>
+
                                 </select>
                             </div>
 
@@ -365,6 +367,7 @@ export default function HojaDeVidaActivo() {
                                 >
                                     <option value="EN_SERVICIO">En Servicio</option>
                                     <option value="MANTENIMIENTO">En Mantenimiento</option>
+                                    <option value="PROCESO_DEVOLUCION">Proceso de Devolución</option>
                                     <option value="DEVOLUCION">Devolución</option>
                                     <option value="ALMACEN">En Almacén</option>
                                 </select>

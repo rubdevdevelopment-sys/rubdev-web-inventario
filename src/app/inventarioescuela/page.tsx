@@ -207,7 +207,9 @@ export default function InventarioDashboard() {
     const totalActivos = activos.length;
     const enServicio = activos.filter(a => a.estado_activo === 'EN_SERVICIO').length;
     const enMantenimiento = activos.filter(a => a.estado_activo === 'MANTENIMIENTO').length;
+    const procesosDevolucion = activos.filter(a => a.estado_activo === 'PROCESO_DEVOLUCION').length;
     const devoluciones = activos.filter(a => a.estado_activo === 'DEVOLUCION').length;
+
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -294,7 +296,7 @@ export default function InventarioDashboard() {
 
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
                 {/* Tarjetas de Métricas */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
                     <div className="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl flex items-center gap-3 sm:gap-4">
                         <div className="p-2.5 sm:p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 shrink-0">
                             <Package className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -338,6 +340,22 @@ export default function InventarioDashboard() {
                         <div>
                             <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Devoluciones</p>
                             <p className="text-xl sm:text-2xl font-bold text-rose-400">{devoluciones}</p>
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={() => setEstadoFilter(estadoFilter === 'PROCESO_DEVOLUCION' ? 'TODOS' : 'PROCESO_DEVOLUCION')}
+                        className={`p-4 sm:p-5 rounded-2xl border text-left transition flex items-center gap-3 sm:gap-4 ${estadoFilter === 'PROCESO_DEVOLUCION'
+                                ? 'bg-rose-500/20 border-rose-500 text-rose-300 ring-2 ring-rose-500/30'
+                                : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                            }`}
+                    >
+                        <div className="p-2.5 sm:p-3 bg-rose-500/10 text-rose-400 rounded-xl border border-rose-500/20 shrink-0">
+                            <Undo2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Procesos de Devolución</p>
+                            <p className="text-xl sm:text-2xl font-bold text-rose-400">{procesosDevolucion}</p>
                         </div>
                     </button>
                 </div>
