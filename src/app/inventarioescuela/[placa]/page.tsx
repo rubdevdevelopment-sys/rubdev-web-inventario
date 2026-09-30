@@ -222,7 +222,7 @@ export default function HojaDeVidaActivo() {
                             <div className="flex items-center gap-3">
                                 <User className="w-5 h-5 text-emerald-400 shrink-0" />
                                 <div>
-                                    <p className="text-xs text-slate-400">Funcionario Responsable Actual</p>
+                                    <p className="text-xs text-slate-400">Servidor Responsable Actual</p>
                                     <p className="font-semibold">{activo.funcionarios?.nombre_completo || 'Sin Asignar'}</p>
                                 </div>
                             </div>
@@ -335,7 +335,7 @@ export default function HojaDeVidaActivo() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-slate-400 mb-1">Nuevo Funcionario Responsable</label>
+                                <label className="block text-xs font-medium text-slate-400 mb-1">Nuevo Servidor Responsable</label>
                                 <select
                                     value={nuevoFuncionarioId}
                                     onChange={(e) => setNuevoFuncionarioId(e.target.value)}

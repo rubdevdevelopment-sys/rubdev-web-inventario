@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import {
     Search, ShieldCheck, Wrench, Package,
     ArrowLeft, QrCode, RefreshCw, Undo2, Plus, X,
-    FileSpreadsheet, Lock, LogOut
+    FileSpreadsheet, Lock, LogOut, UserPlus
 } from 'lucide-react';
 
 interface Activo {
@@ -39,6 +39,11 @@ export default function InventarioDashboard() {
     // Estados del Modal "Nuevo Activo"
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [savingNew, setSavingNew] = useState(false);
+    const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+    const [savingServer, setSavingServer] = useState(false);
+    const [serverName, setServerName] = useState('');
+    const [serverCedula, setServerCedula] = useState('');
+    const [serverDependencia, setServerDependencia] = useState('CONSEJO SUPERIOR DE LA JUDICATURA');
 
     // Formulario del nuevo activo
     const [newPlaca, setNewPlaca] = useState('');
@@ -132,6 +137,56 @@ export default function InventarioDashboard() {
         fetchActivos();
         fetchAuxiliares();
     }, []);
+
+    const handleCrearServidor = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!session) return alert('Debes iniciar sesión como administrador.');
+
+        setSavingServer(true);
+
+        try {
+            const cedula = serverCedula.trim();
+            const { data: servidorExistente, error: consultaError } = await supabase
+                .from('funcionarios')
+                .select('id')
+                .eq('cedula', cedula)
+                .maybeSingle();
+
+            if (consultaError) throw consultaError;
+            if (servidorExistente) {
+                alert(`Ya existe un servidor registrado con la cédula ${cedula}.`);
+                return;
+            }
+
+            const { data: servidor, error } = await supabase
+                .from('funcionarios')
+                .insert({
+                    cedula,
+                    nombre_completo: serverName.trim().toUpperCase(),
+                    dependencia: serverDependencia.trim().toUpperCase()
+                })
+                .select('id, nombre_completo')
+                .single();
+
+            if (error) throw error;
+
+            const servidoresActualizados = [...funcionarios, servidor].sort((a, b) =>
+                a.nombre_completo.localeCompare(b.nombre_completo)
+            );
+            setFuncionarios(servidoresActualizados);
+            setNewFuncionarioId(servidor.id);
+            setIsServerModalOpen(false);
+            setServerName('');
+            setServerCedula('');
+            setServerDependencia('CONSEJO SUPERIOR DE LA JUDICATURA');
+            alert('Servidor creado y seleccionado para asignar activos.');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`Error al crear el servidor: ${message}`);
+        } finally {
+            setSavingServer(false);
+        }
+    };
 
     // Guardar Nuevo Activo
     const handleCrearActivo = async (e: React.FormEvent) => {
@@ -270,6 +325,14 @@ export default function InventarioDashboard() {
                                 >
                                     <Plus className="w-4 h-4 shrink-0" />
                                     <span>Nuevo Activo</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setIsServerModalOpen(true)}
+                                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl text-white transition shadow-lg shadow-emerald-500/20"
+                                >
+                                    <UserPlus className="w-4 h-4 shrink-0" />
+                                    <span>Nuevo Servidor</span>
                                 </button>
 
                                 <button
@@ -461,6 +524,74 @@ export default function InventarioDashboard() {
                 </div>
             </main>
 
+            {session && isServerModalOpen && (
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl">
+                        <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+                            <h3 className="text-lg font-bold text-slate-100">Registrar nuevo servidor</h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsServerModalOpen(false)}
+                                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200"
+                                aria-label="Cerrar"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleCrearServidor} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-1">Nombre completo *</label>
+                                <input
+                                    type="text"
+                                    value={serverName}
+                                    onChange={(e) => setServerName(e.target.value)}
+                                    required
+                                    autoFocus
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-1">Cédula *</label>
+                                <input
+                                    type="text"
+                                    value={serverCedula}
+                                    onChange={(e) => setServerCedula(e.target.value)}
+                                    required
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-1">Dependencia *</label>
+                                <input
+                                    type="text"
+                                    value={serverDependencia}
+                                    onChange={(e) => setServerDependencia(e.target.value)}
+                                    required
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4 border-t border-slate-800">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsServerModalOpen(false)}
+                                    className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingServer}
+                                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-xl text-xs font-semibold transition"
+                                >
+                                    {savingServer ? 'Guardando...' : 'Crear servidor'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Modal Registrar Nuevo Activo */}
             {session && isCreateModalOpen && (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -563,7 +694,7 @@ export default function InventarioDashboard() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-400 mb-1">Funcionario Responsable</label>
+                                    <label className="block text-xs font-medium text-slate-400 mb-1">Servidor Responsable</label>
                                     <select
                                         value={newFuncionarioId}
                                         onChange={(e) => setNewFuncionarioId(e.target.value)}

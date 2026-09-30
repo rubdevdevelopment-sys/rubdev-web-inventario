@@ -115,7 +115,7 @@ export default function ReportePorResponsable() {
                     </Link>
                     <div>
                         <h1 className="font-bold text-base sm:text-lg text-slate-100">RubDev Asset Manager</h1>
-                        <p className="text-xs text-slate-400">Reporte Consolidado por Funcionario Responsable</p>
+                        <p className="text-xs text-slate-400">Reporte Consolidado por Servidor Responsable</p>
                     </div>
                 </div>
 
@@ -138,17 +138,17 @@ export default function ReportePorResponsable() {
             </header>
 
             <main className="max-w-7xl mx-auto w-full p-4 sm:p-8 flex-1">
-                {/* Selector de Funcionario */}
+                {/* Selector de Servidor */}
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 mb-6 sm:mb-8 print:hidden">
                     <label className="block text-xs font-medium text-slate-400 mb-2">
-                        Seleccionar Funcionario Responsable:
+                        Seleccionar Servidor Responsable:
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="relative">
                             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
                             <input
                                 type="text"
-                                placeholder="Filtrar lista de funcionarios..."
+                                placeholder="Filtrar lista de servidores..."
                                 value={searchFunc}
                                 onChange={(e) => setSearchFunc(e.target.value)}
                                 className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-blue-500"
@@ -231,13 +231,13 @@ export default function ReportePorResponsable() {
                                     {loading ? (
                                         <tr>
                                             <td colSpan={7} className="py-8 text-center text-slate-500">
-                                                Cargando cartera del funcionario...
+                                                Cargando cartera del servidor...
                                             </td>
                                         </tr>
                                     ) : activosResponsable.length === 0 ? (
                                         <tr>
                                             <td colSpan={7} className="py-8 text-center text-slate-500">
-                                                Este funcionario no tiene activos asignados actualmente.
+                                                Este servidor no tiene activos asignados actualmente.
                                             </td>
                                         </tr>
                                     ) : (
@@ -281,7 +281,7 @@ export default function ReportePorResponsable() {
                             <div className="text-center">
                                 <div className="border-b border-black mb-2 h-12"></div>
                                 <p className="font-bold">{funcionarioActual.nombre_completo}</p>
-                                <p className="text-slate-600">Funcionario Responsable / Custodio</p>
+                                <p className="text-slate-600">Servidor Responsable / Custodio</p>
                             </div>
 
                             <div className="text-center">
