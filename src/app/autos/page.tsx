@@ -419,14 +419,19 @@ export default function CatalogoAutos() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {catalogoFiltrado.map((auto) => {
               const variantesDelAuto = misAutos.filter((m) => m.catalogo_id === auto.id);
-              const primeraVariante = variantesDelAuto.length > 0 ? variantesDelAuto[0] : null;
 
-              // JERARQUÍA DE IMÁGENES EXACTA:
+              // Buscamos de forma robusta en CUALQUIER variante si ya hay fotos subidas
+              const varianteConPieza = variantesDelAuto.find(v => v.foto_mi_pieza_url && v.foto_mi_pieza_url.trim() !== '');
+              const varianteConReal = variantesDelAuto.find(v => v.foto_auto_real_url && v.foto_auto_real_url.trim() !== '');
+
+              // JERARQUÍA ROBUSTA DE IMÁGENES:
               // 1. Foto de tu pieza real en colección (si ya la conseguiste)
-              // 2. Foto del auto real cargada en el catálogo maestro (para buscarla)
-              // 3. Null (muestra el aviso de "Sin fotografía")
-              const imagenAMostrar = primeraVariante?.foto_mi_pieza_url 
+              // 2. Foto de referencia del catálogo maestro
+              // 3. Foto de auto real guardada en las variantes
+              // 4. Null (muestra "Sin fotografía")
+              const imagenAMostrar = varianteConPieza?.foto_mi_pieza_url 
                 || auto.imagen_referencia_url 
+                || varianteConReal?.foto_auto_real_url 
                 || null;
 
               return (
