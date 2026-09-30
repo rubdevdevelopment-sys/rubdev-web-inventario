@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { 
   Car, Search, Plus, ArrowLeft, 
-  BookmarkCheck, Lock, LogOut, RefreshCw, Upload, Edit3, Camera, Layers 
+  BookmarkCheck, Lock, LogOut, RefreshCw, Upload, Edit3, Camera, Layers, Sparkles 
 } from 'lucide-react';
 
 interface AutoCatalogo {
@@ -60,6 +60,19 @@ export default function CatalogoAutos() {
 
   const [saving, setSaving] = useState(false);
 
+  // Modal para CREAR NUEVO AUTO en el Catálogo Maestro
+  const [isNewModelModalOpen, setIsNewModelModalOpen] = useState(false);
+  const [nuevoModeloNombre, setNuevoModeloNombre] = useState('');
+  const [nuevoFranquicia, setNuevoFranquicia] = useState('');
+  const [nuevaCategoria, setNuevaCategoria] = useState('CINE_TV');
+  const [nuevoAnio, setNuevoAnio] = useState('');
+  const [nuevoPais, setNuevoPais] = useState('');
+  const [nuevoHistoria, setNuevoHistoria] = useState('');
+  const [nuevoCurioso, setNuevoCurioso] = useState('');
+  const [fileRefMaestro, setFileRefMaestro] = useState<File | null>(null);
+  const [previewRefMaestro, setPreviewRefMaestro] = useState<string | null>(null);
+  const [savingMaestro, setSavingMaestro] = useState(false);
+
   // Verificar sesión activa en Supabase Auth
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -104,7 +117,7 @@ export default function CatalogoAutos() {
     fetchData();
   }, []);
 
-  // Abrir modal para NUEVA variante o EDICIÓN de una variante específica
+  // Abrir modal para NUEVA variante o EDICIÓN
   const handleOpenModal = (auto: AutoCatalogo, varianteExistente?: MiColeccion) => {
     if (!session) {
       alert('🔒 Acceso protegido: Debes iniciar sesión como Administrador para registrar o modificar piezas.');
@@ -121,7 +134,7 @@ export default function CatalogoAutos() {
       setPrecioCop(varianteExistente.precio_pagado_cop ? varianteExistente.precio_pagado_cop.toString() : '0');
       setEmpaque(varianteExistente.estado_empaque || 'EN_BLISTER');
       setObservaciones(varianteExistente.observaciones || '');
-      setPreviewReal(varianteExistente.foto_auto_real_url || null);
+      setPreviewReal(varianteExistente.foto_auto_real_url || auto.imagen_referencia_url || null);
       setPreviewPieza(varianteExistente.foto_mi_pieza_url || null);
     } else {
       setEditingRecordId(null);
@@ -161,12 +174,10 @@ export default function CatalogoAutos() {
     }
   };
 
+  // Guardar Variante de Colección
   const handleGuardarColeccion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session) {
-      alert('Debes iniciar sesión como administrador para guardar cambios.');
-      return;
-    }
+    if (!session) return;
     if (!selectedAuto) return;
     setSaving(true);
 
@@ -198,27 +209,65 @@ export default function CatalogoAutos() {
     let error = null;
 
     if (editingRecordId) {
-      const res = await supabase
-        .from('autos_mi_coleccion')
-        .update(payload)
-        .eq('id', editingRecordId);
+      const res = await supabase.from('autos_mi_coleccion').update(payload).eq('id', editingRecordId);
       error = res.error;
     } else {
-      const res = await supabase
-        .from('autos_mi_coleccion')
-        .insert(payload);
+      const res = await supabase.from('autos_mi_coleccion').insert(payload);
       error = res.error;
     }
 
     if (error) {
       alert(`Error al guardar: ${error.message}`);
     } else {
-      alert(`✅ ¡Variante de ${selectedAuto.modelo_nombre} guardada exitosamente en tu vitrina!`);
+      alert(`✅ ¡Variante de ${selectedAuto.modelo_nombre} guardada exitosamente!`);
       setSelectedAuto(null);
       setEditingRecordId(null);
       fetchData();
     }
     setSaving(false);
+  };
+
+  // Guardar NUEVO MODELO en el Catálogo Maestro
+  const handleCrearNuevoModelo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session) {
+      alert('Debes iniciar sesión como administrador.');
+      return;
+    }
+    setSavingMaestro(true);
+
+    let refUrl = null;
+    if (fileRefMaestro) {
+      refUrl = await uploadFoto(fileRefMaestro);
+    }
+
+    const { error } = await supabase.from('autos_catalogo_maestro').insert({
+      modelo_nombre: nuevoModeloNombre.trim(),
+      origen_franquicia: nuevoFranquicia.trim() || 'Colección Personal',
+      categoria: nuevaCategoria,
+      anio_vehiculo_real: nuevoAnio ? parseInt(nuevoAnio) : null,
+      pais_origen: nuevoPais.trim() || null,
+      historia_resumen: nuevoHistoria.trim() || 'Modelo registrado por el coleccionista.',
+      datos_curiosos: nuevoCurioso.trim() || null,
+      imagen_referencia_url: refUrl
+    });
+
+    if (error) {
+      alert(`Error al registrar nuevo modelo: ${error.message}`);
+    } else {
+      alert(`🎉 ¡Nuevo vehículo "${nuevoModeloNombre}" agregado exitosamente al Catálogo Maestro!`);
+      setIsNewModelModalOpen(false);
+      setNuevoModeloNombre('');
+      setNuevoFranquicia('');
+      setNuevoAnio('');
+      setNuevoPais('');
+      setNuevoHistoria('');
+      setNuevoCurioso('');
+      setFileRefMaestro(null);
+      setPreviewRefMaestro(null);
+      fetchData();
+    }
+    setSavingMaestro(false);
   };
 
   const eliminarVariante = async (idVariante: string) => {
@@ -276,6 +325,16 @@ export default function CatalogoAutos() {
             <span>Mi Vitrina ({misAutos.filter(a => a.estado === 'ADQUIRIDO').length})</span>
           </Link>
 
+          {session && (
+            <button
+              onClick={() => setIsNewModelModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-red-500/20"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>+ Nuevo Modelo</span>
+            </button>
+          )}
+
           {!session ? (
             <Link
               href="/inventarioescuela/login?next=/autos"
@@ -301,18 +360,18 @@ export default function CatalogoAutos() {
         <div className="bg-gradient-to-r from-slate-900 via-red-950/20 to-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
             <span className="text-xs font-bold text-red-500 uppercase tracking-widest">
-              Catálogo Maestro con 100+ Modelos
+              Catálogo Maestro Expansible
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
               Colección de Autos & Clásicos Colombianos
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mt-2 leading-relaxed">
-              Explora modelos reales, de cine y clásicos de Colombia. Ahora puedes registrar múltiples variantes de un mismo auto (diferentes escalas, fabricantes o empaques) con doble fotografía.
+              Explora modelos reales, de cine y clásicos de Colombia. Agrega nuevos modelos al catálogo maestro cuando desees y registra múltiples variantes con doble fotografía.
             </p>
           </div>
           <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl text-center shrink-0 w-full md:w-auto min-w-[200px]">
-            <p className="text-xs text-slate-400 uppercase font-semibold">Piezas en Vitrina</p>
-            <p className="text-3xl font-black text-red-500 mt-1">{misAutos.length}</p>
+            <p className="text-xs text-slate-400 uppercase font-semibold">Modelos en Catálogo</p>
+            <p className="text-3xl font-black text-red-500 mt-1">{catalogo.length}</p>
           </div>
         </div>
 
@@ -359,7 +418,6 @@ export default function CatalogoAutos() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {catalogoFiltrado.map((auto) => {
-              // Obtenemos todas las variantes registradas para este modelo en la colección del usuario
               const variantesDelAuto = misAutos.filter((m) => m.catalogo_id === auto.id);
 
               return (
@@ -368,7 +426,6 @@ export default function CatalogoAutos() {
                   className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between hover:border-slate-700 transition overflow-hidden"
                 >
                   <div className="space-y-3">
-                    {/* Imagen de referencia del carro real (o la primera foto real subida) */}
                     {auto.imagen_referencia_url ? (
                       <div className="relative h-44 w-full rounded-2xl overflow-hidden mb-3 border border-slate-800">
                         <img 
@@ -409,7 +466,6 @@ export default function CatalogoAutos() {
                       </div>
                     )}
 
-                    {/* Listado de variantes si el usuario ya tiene piezas guardadas */}
                     {variantesDelAuto.length > 0 && (
                       <div className="mt-4 pt-3 border-t border-slate-800 space-y-2">
                         <p className="text-[11px] font-bold text-red-400 uppercase tracking-wider">Mis Variantes Guardadas:</p>
@@ -452,7 +508,6 @@ export default function CatalogoAutos() {
                     )}
                   </div>
 
-                  {/* Botón para agregar nueva variante */}
                   <div className="mt-6 pt-4 border-t border-slate-800">
                     {session ? (
                       <button
@@ -479,7 +534,151 @@ export default function CatalogoAutos() {
         )}
       </main>
 
-      {/* Modal Inteligente para Registrar / Editar Variante con Doble Foto */}
+      {/* Modal para CREAR NUEVO MODELO EN EL CATÁLOGO MAESTRO */}
+      {session && isNewModelModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-xl w-full shadow-2xl space-y-4 my-8">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-red-500" />
+                Registrar Nuevo Modelo en el Catálogo Maestro
+              </h3>
+              <button
+                onClick={() => setIsNewModelModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCrearNuevoModelo} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Nombre del Modelo *</label>
+                  <input
+                    type="text"
+                    value={nuevoModeloNombre}
+                    onChange={(e) => setNuevoModeloNombre(e.target.value)}
+                    placeholder="Ej: Renault 9 TX"
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Franquicia / Origen</label>
+                  <input
+                    type="text"
+                    value={nuevoFranquicia}
+                    onChange={(e) => setNuevoFranquicia(e.target.value)}
+                    placeholder="Ej: Sofasa Colombia / Película X"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Categoría</label>
+                  <select
+                    value={nuevaCategoria}
+                    onChange={(e) => setNuevaCategoria(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500"
+                  >
+                    <option value="CLASICOS_COLOMBIA">🚗 Clásicos Colombianos</option>
+                    <option value="CINE_TV">🎬 Cine & TV</option>
+                    <option value="ANIME_COMIC">⚡ Ánime & Cómics</option>
+                    <option value="ICONO_HISTORICO">📜 Históricos</option>
+                    <option value="SUPERDEPORTIVO">🏎️ Superdeportivos</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Año Real del Auto</label>
+                  <input
+                    type="number"
+                    value={nuevoAnio}
+                    onChange={(e) => setNuevoAnio(e.target.value)}
+                    placeholder="Ej: 1988"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">País de Origen</label>
+                  <input
+                    type="text"
+                    value={nuevoPais}
+                    onChange={(e) => setNuevoPais(e.target.value)}
+                    placeholder="Ej: Colombia"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Historia / Resumen *</label>
+                <textarea
+                  value={nuevoHistoria}
+                  onChange={(e) => setNuevoHistoria(e.target.value)}
+                  placeholder="Breve descripción histórica o del modelo..."
+                  required
+                  rows={3}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Dato Curioso (Opcional)</label>
+                <input
+                  type="text"
+                  value={nuevoCurioso}
+                  onChange={(e) => setNuevoCurioso(e.target.value)}
+                  placeholder="Ej: Fue el taxi oficial de Bogotá en los 90..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Fotografía de Referencia del Vehículo Real</label>
+                <div className="border-2 border-dashed border-slate-800 rounded-2xl p-3 text-center bg-slate-950/50 hover:border-red-500/50 transition relative">
+                  {previewRefMaestro ? (
+                    <div className="relative">
+                      <img src={previewRefMaestro} alt="Ref Maestro" className="h-32 w-full object-cover rounded-xl" />
+                      <button type="button" onClick={() => { setFileRefMaestro(null); setPreviewRefMaestro(null); }} className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center gap-1 py-3">
+                      <Upload className="w-5 h-5 text-slate-500" />
+                      <span className="text-xs text-slate-400">Subir imagen de referencia</span>
+                      <input type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) { setFileRefMaestro(e.target.files[0]); setPreviewRefMaestro(URL.createObjectURL(e.target.files[0])); } }} className="hidden" />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsNewModelModalOpen(false)}
+                  className="flex-1 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-700 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingMaestro}
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-medium hover:bg-red-500 transition shadow-lg shadow-red-500/20"
+                >
+                  {savingMaestro ? 'Registrando...' : 'Guardar en Catálogo Maestro'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Registrar / Editar Variante con Doble Foto */}
       {session && selectedAuto && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 my-8">
@@ -497,10 +696,7 @@ export default function CatalogoAutos() {
             </div>
 
             <form onSubmit={handleGuardarColeccion} className="space-y-4">
-              
-              {/* Sección de Doble Fotografía */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Foto 1: Carro Real */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 mb-1">1. Foto del Carro Real</label>
                   <div className="border border-dashed border-slate-800 rounded-2xl p-3 text-center bg-slate-950/50 hover:border-red-500/50 transition relative">
@@ -519,7 +715,6 @@ export default function CatalogoAutos() {
                   </div>
                 </div>
 
-                {/* Foto 2: Mi Pieza */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 mb-1">2. Foto de Tu Pieza</label>
                   <div className="border border-dashed border-slate-800 rounded-2xl p-3 text-center bg-slate-950/50 hover:border-red-500/50 transition relative">
@@ -556,7 +751,6 @@ export default function CatalogoAutos() {
                     <option value="Bburago">Bburago</option>
                     <option value="Solido">Solido</option>
                     <option value="Tomica">Tomica</option>
-                    <option value="Kyosho">Kyosho</option>
                   </select>
                 </div>
 
@@ -567,10 +761,10 @@ export default function CatalogoAutos() {
                     onChange={(e) => setEscala(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500"
                   >
-                    <option value="1:64">1:64 (Estándar / Blister)</option>
-                    <option value="1:43">1:43 (Mediano / Detalle)</option>
+                    <option value="1:64">1:64 (Estándar)</option>
+                    <option value="1:43">1:43 (Detalle)</option>
                     <option value="1:24">1:24 (Grande)</option>
-                    <option value="1:18">1:18 (Coleccionista Premium)</option>
+                    <option value="1:18">1:18 (Coleccionista)</option>
                   </select>
                 </div>
               </div>
@@ -624,7 +818,7 @@ export default function CatalogoAutos() {
                     type="text"
                     value={observaciones}
                     onChange={(e) => setObservaciones(e.target.value)}
-                    placeholder="Ej: Edición especial roja / Llantas de goma"
+                    placeholder="Ej: Variante roja / Rines especiales"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
                   />
                 </div>
