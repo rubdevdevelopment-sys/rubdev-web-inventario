@@ -419,6 +419,15 @@ export default function CatalogoAutos() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {catalogoFiltrado.map((auto) => {
               const variantesDelAuto = misAutos.filter((m) => m.catalogo_id === auto.id);
+              const primeraVariante = variantesDelAuto.length > 0 ? variantesDelAuto[0] : null;
+
+              // JERARQUÍA DE IMÁGENES EXACTA:
+              // 1. Foto de tu pieza real en colección (si ya la conseguiste)
+              // 2. Foto del auto real cargada en el catálogo maestro (para buscarla)
+              // 3. Null (muestra el aviso de "Sin fotografía")
+              const imagenAMostrar = primeraVariante?.foto_mi_pieza_url 
+                || auto.imagen_referencia_url 
+                || null;
 
               return (
                 <div
@@ -426,18 +435,28 @@ export default function CatalogoAutos() {
                   className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between hover:border-slate-700 transition overflow-hidden"
                 >
                   <div className="space-y-3">
-                    {auto.imagen_referencia_url ? (
-                      <div className="relative h-44 w-full rounded-2xl overflow-hidden mb-3 border border-slate-800">
+                    {/* Contenedor de Imagen con Jerarquía & "Sin Fotografía" */}
+                    <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center border border-dashed border-slate-800 mb-3">
+                      {imagenAMostrar ? (
                         <img 
-                          src={auto.imagen_referencia_url} 
+                          src={imagenAMostrar} 
                           alt={auto.modelo_nombre} 
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute bottom-2 left-2 bg-slate-950/80 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] text-slate-300 border border-slate-800 font-medium">
-                          Vehículo Real / Referencia
+                      ) : (
+                        <div className="text-slate-500 font-medium text-xs flex flex-col items-center gap-2">
+                          <Car className="w-7 h-7 text-slate-600" />
+                          <span>Sin fotografía</span>
                         </div>
-                      </div>
-                    ) : null}
+                      )}
+
+                      {/* Badge indicador si ya hace parte de tu colección */}
+                      {variantesDelAuto.length > 0 && (
+                        <span className="absolute top-2.5 right-2.5 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md">
+                          ✓ En Colección
+                        </span>
+                      )}
+                    </div>
 
                     <div className="flex justify-between items-start gap-2">
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">

@@ -24,6 +24,7 @@ interface MiColeccionItem {
   estado: string;
   precio_pagado_cop: number;
   estado_empaque: string;
+  foto_auto_real_url?: string | null;
   foto_mi_pieza_url?: string | null;
   fecha_adquisicion?: string | null;
   autos_catalogo_maestro?: AutoCatalogo;
@@ -174,7 +175,7 @@ export default function MiVitrinaColeccion() {
           </div>
         </div>
 
-        {/* Grilla de Piezas en Vitrina */}
+        {/* Grilla de Piezas en Vitrina con Visualización Dual (Auto Real vs Mi Pieza) */}
         {loading ? (
           <div className="text-center py-16 text-slate-500">Cargando vitrina personal...</div>
         ) : itemsFiltrados.length === 0 ? (
@@ -185,7 +186,10 @@ export default function MiVitrinaColeccion() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {itemsFiltrados.map((item) => {
               const autoMaestro = item.autos_catalogo_maestro;
-              const imagen = item.foto_mi_pieza_url || autoMaestro?.imagen_referencia_url;
+              
+              // Imágenes para la visualización dual
+              const fotoReal = item.foto_auto_real_url || autoMaestro?.imagen_referencia_url;
+              const fotoPieza = item.foto_mi_pieza_url;
 
               return (
                 <div 
@@ -193,25 +197,33 @@ export default function MiVitrinaColeccion() {
                   className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col justify-between hover:border-slate-700 transition"
                 >
                   <div className="space-y-3">
-                    {/* Visualización de la Fotografía */}
-                    {imagen ? (
-                      <div className="relative h-48 w-full rounded-2xl overflow-hidden border border-slate-800">
-                        <img 
-                          src={imagen} 
-                          alt={autoMaestro?.modelo_nombre || 'Pieza'} 
-                          className="w-full h-full object-cover"
-                        />
-                        {item.foto_mi_pieza_url && (
-                          <span className="absolute top-2 right-2 bg-slate-900/90 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                            Foto Real
-                          </span>
-                        )}
+                    
+                    {/* Visualización Dual: Auto Real vs Mi Pieza */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {/* 1. Foto del Auto Real */}
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-slate-400 font-semibold mb-1 text-center uppercase">Auto Real</span>
+                        <div className="h-36 w-full rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-800">
+                          {fotoReal ? (
+                            <img src={fotoReal} alt="Auto Real" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] text-slate-600 text-center p-2">Sin foto real</span>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <div className="h-48 w-full rounded-2xl bg-slate-950 flex items-center justify-center text-slate-600 text-xs border border-slate-800">
-                        Sin Fotografía
+
+                      {/* 2. Foto de Tu Pieza Real */}
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-emerald-400 font-semibold mb-1 text-center uppercase">Mi Pieza</span>
+                        <div className="h-36 w-full rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-emerald-900/40">
+                          {fotoPieza ? (
+                            <img src={fotoPieza} alt="Mi Pieza" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] text-slate-600 text-center p-2">Pendiente foto</span>
+                          )}
+                        </div>
                       </div>
-                    )}
+                    </div>
 
                     <div className="flex justify-between items-start gap-2">
                       <span className="text-xs font-bold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20">
