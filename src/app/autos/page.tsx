@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { 
   Car, Search, Plus, ArrowLeft, 
-  BookmarkCheck, Lock, LogOut, RefreshCw, Upload, Edit3, Camera 
+  BookmarkCheck, Lock, LogOut, RefreshCw, Upload, Edit3, Camera, Layers 
 } from 'lucide-react';
 
 interface AutoCatalogo {
@@ -28,7 +28,9 @@ interface MiColeccion {
   estado: string;
   precio_pagado_cop: number;
   estado_empaque: string;
+  foto_auto_real_url?: string | null;
   foto_mi_pieza_url?: string | null;
+  observaciones?: string | null;
 }
 
 export default function CatalogoAutos() {
@@ -39,16 +41,23 @@ export default function CatalogoAutos() {
   const [categoriaFiltro, setCategoriaFiltro] = useState('TODOS');
   const [session, setSession] = useState<any>(null);
 
-  // Modal para agregar/editar en la colección
+  // Modal para agregar/editar variante en la colección
   const [selectedAuto, setSelectedAuto] = useState<AutoCatalogo | null>(null);
-  const [existingRecordId, setExistingRecordId] = useState<string | null>(null);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [fabricante, setFabricante] = useState('Hot Wheels Premium');
   const [escala, setEscala] = useState('1:64');
-  const [estado, setEstado] = useState('BUSCANDO');
+  const [estado, setEstado] = useState('ADQUIRIDO');
   const [precioCop, setPrecioCop] = useState('0');
   const [empaque, setEmpaque] = useState('EN_BLISTER');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [observaciones, setObservaciones] = useState('');
+
+  // Doble imagen (Real vs Mi Pieza)
+  const [fileReal, setFileReal] = useState<File | null>(null);
+  const [previewReal, setPreviewReal] = useState<string | null>(null);
+
+  const [filePieza, setFilePieza] = useState<File | null>(null);
+  const [previewPieza, setPreviewPieza] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
 
   // Verificar sesión activa en Supabase Auth
@@ -95,42 +104,38 @@ export default function CatalogoAutos() {
     fetchData();
   }, []);
 
-  // Abrir modal solo si el usuario está autenticado
-  const handleOpenModal = (auto: AutoCatalogo) => {
+  // Abrir modal para NUEVA variante o EDICIÓN de una variante específica
+  const handleOpenModal = (auto: AutoCatalogo, varianteExistente?: MiColeccion) => {
     if (!session) {
       alert('🔒 Acceso protegido: Debes iniciar sesión como Administrador para registrar o modificar piezas.');
       return;
     }
 
     setSelectedAuto(auto);
-    const piezaExistente = misAutos.find((m) => m.catalogo_id === auto.id);
 
-    if (piezaExistente) {
-      setExistingRecordId(piezaExistente.id);
-      setFabricante(piezaExistente.fabricante_diecast || 'Hot Wheels Premium');
-      setEscala(piezaExistente.escala || '1:64');
-      setEstado(piezaExistente.estado || 'ADQUIRIDO');
-      setPrecioCop(piezaExistente.precio_pagado_cop ? piezaExistente.precio_pagado_cop.toString() : '0');
-      setEmpaque(piezaExistente.estado_empaque || 'EN_BLISTER');
-      setImagePreview(piezaExistente.foto_mi_pieza_url || null);
+    if (varianteExistente) {
+      setEditingRecordId(varianteExistente.id);
+      setFabricante(varianteExistente.fabricante_diecast || 'Hot Wheels Premium');
+      setEscala(varianteExistente.escala || '1:64');
+      setEstado(varianteExistente.estado || 'ADQUIRIDO');
+      setPrecioCop(varianteExistente.precio_pagado_cop ? varianteExistente.precio_pagado_cop.toString() : '0');
+      setEmpaque(varianteExistente.estado_empaque || 'EN_BLISTER');
+      setObservaciones(varianteExistente.observaciones || '');
+      setPreviewReal(varianteExistente.foto_auto_real_url || null);
+      setPreviewPieza(varianteExistente.foto_mi_pieza_url || null);
     } else {
-      setExistingRecordId(null);
+      setEditingRecordId(null);
       setFabricante('Hot Wheels Premium');
       setEscala('1:64');
-      setEstado('BUSCANDO');
+      setEstado('ADQUIRIDO');
       setPrecioCop('0');
       setEmpaque('EN_BLISTER');
-      setImagePreview(null);
+      setObservaciones('');
+      setPreviewReal(auto.imagen_referencia_url || null);
+      setPreviewPieza(null);
     }
-    setSelectedFile(null);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
+    setFileReal(null);
+    setFilePieza(null);
   };
 
   const uploadFoto = async (file: File): Promise<string | null> => {
@@ -165,11 +170,16 @@ export default function CatalogoAutos() {
     if (!selectedAuto) return;
     setSaving(true);
 
-    let fotoUrl: string | null = imagePreview;
+    let urlReal = previewReal;
+    if (fileReal) {
+      const uploaded = await uploadFoto(fileReal);
+      if (uploaded) urlReal = uploaded;
+    }
 
-    if (selectedFile) {
-      const nuevaFotoUrl = await uploadFoto(selectedFile);
-      if (nuevaFotoUrl) fotoUrl = nuevaFotoUrl;
+    let urlPieza = previewPieza;
+    if (filePieza) {
+      const uploaded = await uploadFoto(filePieza);
+      if (uploaded) urlPieza = uploaded;
     }
 
     const payload = {
@@ -179,17 +189,19 @@ export default function CatalogoAutos() {
       estado: estado,
       precio_pagado_cop: parseFloat(precioCop) || 0,
       estado_empaque: empaque,
-      foto_mi_pieza_url: fotoUrl,
+      foto_auto_real_url: urlReal,
+      foto_mi_pieza_url: urlPieza,
+      observaciones: observaciones,
       fecha_adquisicion: new Date().toISOString().split('T')[0]
     };
 
     let error = null;
 
-    if (existingRecordId) {
+    if (editingRecordId) {
       const res = await supabase
         .from('autos_mi_coleccion')
         .update(payload)
-        .eq('id', existingRecordId);
+        .eq('id', editingRecordId);
       error = res.error;
     } else {
       const res = await supabase
@@ -201,14 +213,19 @@ export default function CatalogoAutos() {
     if (error) {
       alert(`Error al guardar: ${error.message}`);
     } else {
-      alert(`✅ ¡${selectedAuto.modelo_nombre} actualizado correctamente en tu vitrina!`);
+      alert(`✅ ¡Variante de ${selectedAuto.modelo_nombre} guardada exitosamente en tu vitrina!`);
       setSelectedAuto(null);
-      setSelectedFile(null);
-      setImagePreview(null);
-      setExistingRecordId(null);
+      setEditingRecordId(null);
       fetchData();
     }
     setSaving(false);
+  };
+
+  const eliminarVariante = async (idVariante: string) => {
+    if (!confirm('¿Estás seguro de eliminar esta variante de tu colección?')) return;
+    const { error } = await supabase.from('autos_mi_coleccion').delete().eq('id', idVariante);
+    if (error) alert(`Error al eliminar: ${error.message}`);
+    else fetchData();
   };
 
   const catalogoFiltrado = catalogo.filter((auto) => {
@@ -222,14 +239,13 @@ export default function CatalogoAutos() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       
-      {/* Topbar Navigation Con Ícono Diferenciador */}
+      {/* Topbar Navigation */}
       <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
         <div className="flex items-center justify-between w-full sm:w-auto gap-3">
           <Link href="/" className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           
-          {/* Avatar con Ícono Rojo de Carro + Título del Módulo */}
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-red-500/10 text-red-500 rounded-2xl border border-red-500/20 shrink-0">
               <Car className="w-6 h-6" />
@@ -238,7 +254,7 @@ export default function CatalogoAutos() {
               <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-white">
                 RubDev <span className="text-red-500">AutoCollection</span>
               </h1>
-              <p className="text-xs text-red-400 font-medium">Catálogo Maestro & Colección de Vehículos</p>
+              <p className="text-xs text-red-400 font-medium">Catálogo Maestro & Vitrina Multivariante</p>
             </div>
           </div>
         </div>
@@ -285,18 +301,18 @@ export default function CatalogoAutos() {
         <div className="bg-gradient-to-r from-slate-900 via-red-950/20 to-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
             <span className="text-xs font-bold text-red-500 uppercase tracking-widest">
-              Catálogo Maestro Precargado
+              Catálogo Maestro con 100+ Modelos
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
-              Autos Icónicos del Mundo & Cine
+              Colección de Autos & Clásicos Colombianos
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mt-2 leading-relaxed">
-              Explora la historia real, películas, series y cómics. Registra, sube o edita las fotografías reales de tus piezas en la vitrina.
+              Explora modelos reales, de cine y clásicos de Colombia. Ahora puedes registrar múltiples variantes de un mismo auto (diferentes escalas, fabricantes o empaques) con doble fotografía.
             </p>
           </div>
           <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl text-center shrink-0 w-full md:w-auto min-w-[200px]">
-            <p className="text-xs text-slate-400 uppercase font-semibold">Modelos Disponibles</p>
-            <p className="text-3xl font-black text-red-500 mt-1">{catalogo.length}</p>
+            <p className="text-xs text-slate-400 uppercase font-semibold">Piezas en Vitrina</p>
+            <p className="text-3xl font-black text-red-500 mt-1">{misAutos.length}</p>
           </div>
         </div>
 
@@ -306,7 +322,7 @@ export default function CatalogoAutos() {
             <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
             <input
               type="text"
-              placeholder="Buscar auto o película (ej. DeLorean, Batman)..."
+              placeholder="Buscar auto o franquicia (ej. Renault 4, Batman)..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
@@ -343,8 +359,8 @@ export default function CatalogoAutos() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {catalogoFiltrado.map((auto) => {
-              const miPieza = misAutos.find((m) => m.catalogo_id === auto.id);
-              const estadoPieza = miPieza ? miPieza.estado : 'BUSCANDO';
+              // Obtenemos todas las variantes registradas para este modelo en la colección del usuario
+              const variantesDelAuto = misAutos.filter((m) => m.catalogo_id === auto.id);
 
               return (
                 <div
@@ -352,24 +368,17 @@ export default function CatalogoAutos() {
                   className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between hover:border-slate-700 transition overflow-hidden"
                 >
                   <div className="space-y-3">
-                    {miPieza?.foto_mi_pieza_url ? (
-                      <div className="relative h-48 w-full rounded-2xl overflow-hidden mb-3 border border-slate-800 group">
-                        <img 
-                          src={miPieza.foto_mi_pieza_url} 
-                          alt={auto.modelo_nombre} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        />
-                        <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur px-2 py-1 rounded-lg text-[10px] text-emerald-400 border border-emerald-500/30 font-medium">
-                          Foto de Mi Pieza
-                        </div>
-                      </div>
-                    ) : auto.imagen_referencia_url ? (
+                    {/* Imagen de referencia del carro real (o la primera foto real subida) */}
+                    {auto.imagen_referencia_url ? (
                       <div className="relative h-44 w-full rounded-2xl overflow-hidden mb-3 border border-slate-800">
                         <img 
                           src={auto.imagen_referencia_url} 
                           alt={auto.modelo_nombre} 
                           className="w-full h-full object-cover"
                         />
+                        <div className="absolute bottom-2 left-2 bg-slate-950/80 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] text-slate-300 border border-slate-800 font-medium">
+                          Vehículo Real / Referencia
+                        </div>
                       </div>
                     ) : null}
 
@@ -378,19 +387,9 @@ export default function CatalogoAutos() {
                         {auto.origen_franquicia}
                       </span>
                       
-                      <span className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                        estadoPieza === 'ADQUIRIDO' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        estadoPieza === 'APARTADO' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                        estadoPieza === 'INTERCAMBIO' || estadoPieza === 'VENTA' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                        estadoPieza === 'EN_MANTENIMIENTO' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                        'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                      }`}>
-                        {estadoPieza === 'BUSCANDO' ? '🔍 Buscando' :
-                         estadoPieza === 'DESEADO' ? '★ En Lista de Deseos' :
-                         estadoPieza === 'APARTADO' ? '📌 Apartada' :
-                         estadoPieza === 'ADQUIRIDO' ? '✓ Adquirida' :
-                         estadoPieza === 'EN_MANTENIMIENTO' ? '🛠️ En Mantenimiento' :
-                         estadoPieza === 'INTERCAMBIO' ? '🔄 Para Intercambio' : '🏷️ Para Venta'}
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-red-400" />
+                        {variantesDelAuto.length} {variantesDelAuto.length === 1 ? 'Variante' : 'Variantes'}
                       </span>
                     </div>
 
@@ -409,49 +408,67 @@ export default function CatalogoAutos() {
                         {auto.datos_curiosos}
                       </div>
                     )}
+
+                    {/* Listado de variantes si el usuario ya tiene piezas guardadas */}
+                    {variantesDelAuto.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-slate-800 space-y-2">
+                        <p className="text-[11px] font-bold text-red-400 uppercase tracking-wider">Mis Variantes Guardadas:</p>
+                        <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                          {variantesDelAuto.map((v) => (
+                            <div key={v.id} className="bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs">
+                              <div className="flex items-center gap-2.5">
+                                {v.foto_mi_pieza_url ? (
+                                  <img src={v.foto_mi_pieza_url} alt="Mi Pieza" className="w-10 h-10 object-cover rounded-lg border border-slate-800 shrink-0" />
+                                ) : (
+                                  <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-slate-600 shrink-0">🚗</div>
+                                )}
+                                <div>
+                                  <p className="font-bold text-white">{v.fabricante_diecast} <span className="text-slate-400 font-normal">({v.escala})</span></p>
+                                  <p className="text-[10px] text-slate-400">{v.estado_empaque} · <span className="text-emerald-400 font-semibold">${v.precio_pagado_cop?.toLocaleString()} COP</span></p>
+                                </div>
+                              </div>
+                              {session && (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => handleOpenModal(auto, v)}
+                                    className="p-1.5 bg-slate-800 hover:bg-amber-600 text-slate-300 hover:text-white rounded-lg transition"
+                                    title="Editar esta variante"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => eliminarVariante(v.id)}
+                                    className="p-1.5 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg transition"
+                                    title="Eliminar variante"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Botones protegidos por sesión */}
-                  <div className="flex gap-2 mt-6">
+                  {/* Botón para agregar nueva variante */}
+                  <div className="mt-6 pt-4 border-t border-slate-800">
                     {session ? (
-                      <>
-                        <button
-                          onClick={() => handleOpenModal(auto)}
-                          className={`flex-1 py-2.5 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 ${
-                            miPieza 
-                              ? 'bg-slate-800 hover:bg-amber-600 text-slate-200 hover:text-white border border-slate-700' 
-                              : 'bg-red-600 hover:bg-red-500 text-white'
-                          }`}
-                        >
-                          {miPieza ? (
-                            <>
-                              <Edit3 className="w-3.5 h-3.5 text-amber-400" />
-                              Editar
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="w-3.5 h-3.5" />
-                              Registrar
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          onClick={() => handleOpenModal(auto)}
-                          className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
-                          title="Subir / Cambiar Fotografía de mi pieza"
-                        >
-                          <Camera className="w-4 h-4 text-blue-400" />
-                          <span className="hidden sm:inline">Subir Foto</span>
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleOpenModal(auto)}
+                        className="w-full py-2.5 text-xs font-semibold rounded-xl bg-red-600 hover:bg-red-500 text-white transition flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Añadir Nueva Variante / Escala / Proveedor
+                      </button>
                     ) : (
                       <Link
                         href="/inventarioescuela/login?next=/autos"
-                        className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-medium rounded-xl transition flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-400 text-xs font-medium rounded-xl transition flex items-center justify-center gap-2"
                       >
                         <Lock className="w-3.5 h-3.5 text-amber-500" />
-                        Modo Consulta (Iniciar Sesión para Gestionar)
+                        Inicia sesión para gestionar tu vitrina
                       </Link>
                     )}
                   </div>
@@ -462,88 +479,87 @@ export default function CatalogoAutos() {
         )}
       </main>
 
-      {/* Modal Inteligente (Solo si hay sesión activa) */}
+      {/* Modal Inteligente para Registrar / Editar Variante con Doble Foto */}
       {session && selectedAuto && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 my-8">
-            <h3 className="text-lg font-bold text-white">
-              {existingRecordId ? 'Editar Registro:' : 'Registrar / Cargar Foto:'}{' '}
-              <span className="text-red-500">{selectedAuto.modelo_nombre}</span>
-            </h3>
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 my-8">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white">
+                {editingRecordId ? 'Editar Variante:' : 'Registrar Variante:'}{' '}
+                <span className="text-red-500">{selectedAuto.modelo_nombre}</span>
+              </h3>
+              <button
+                onClick={() => setSelectedAuto(null)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
 
             <form onSubmit={handleGuardarColeccion} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
-                  Fotografía Real de Tu Pieza
-                </label>
-                <div className="border-2 border-dashed border-slate-800 rounded-2xl p-4 text-center bg-slate-950/50 hover:border-red-500/50 transition relative">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img 
-                        src={imagePreview} 
-                        alt="Previsualización" 
-                        className="h-36 w-full object-cover rounded-xl"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedFile(null); setImagePreview(null); }}
-                        className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-1.5 text-xs shadow-lg"
-                        title="Eliminar imagen"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="cursor-pointer flex flex-col items-center justify-center gap-1 py-2">
-                      <Upload className="w-6 h-6 text-slate-500" />
-                      <span className="text-xs text-slate-400 font-medium">Subir foto desde tu dispositivo</span>
-                      <span className="text-[10px] text-slate-600">JPG, PNG o WebP (Máx. 5MB)</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleFileChange} 
-                        className="hidden" 
-                      />
-                    </label>
-                  )}
+              
+              {/* Sección de Doble Fotografía */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Foto 1: Carro Real */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">1. Foto del Carro Real</label>
+                  <div className="border border-dashed border-slate-800 rounded-2xl p-3 text-center bg-slate-950/50 hover:border-red-500/50 transition relative">
+                    {previewReal ? (
+                      <div className="relative">
+                        <img src={previewReal} alt="Real" className="h-28 w-full object-cover rounded-xl" />
+                        <button type="button" onClick={() => { setFileReal(null); setPreviewReal(null); }} className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 text-[10px]">✕</button>
+                      </div>
+                    ) : (
+                      <label className="cursor-pointer flex flex-col items-center justify-center gap-1 py-4">
+                        <Upload className="w-5 h-5 text-slate-500" />
+                        <span className="text-[11px] text-slate-400">Subir foto real</span>
+                        <input type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) { setFileReal(e.target.files[0]); setPreviewReal(URL.createObjectURL(e.target.files[0])); } }} className="hidden" />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Foto 2: Mi Pieza */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">2. Foto de Tu Pieza</label>
+                  <div className="border border-dashed border-slate-800 rounded-2xl p-3 text-center bg-slate-950/50 hover:border-red-500/50 transition relative">
+                    {previewPieza ? (
+                      <div className="relative">
+                        <img src={previewPieza} alt="Mi Pieza" className="h-28 w-full object-cover rounded-xl" />
+                        <button type="button" onClick={() => { setFilePieza(null); setPreviewPieza(null); }} className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 text-[10px]">✕</button>
+                      </div>
+                    ) : (
+                      <label className="cursor-pointer flex flex-col items-center justify-center gap-1 py-4">
+                        <Camera className="w-5 h-5 text-blue-400" />
+                        <span className="text-[11px] text-slate-400">Subir foto de tu miniatura</span>
+                        <input type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) { setFilePieza(e.target.files[0]); setPreviewPieza(URL.createObjectURL(e.target.files[0])); } }} className="hidden" />
+                      </label>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Estado de la Pieza</label>
-                <select
-                  value={estado}
-                  onChange={(e) => setEstado(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500 font-semibold"
-                >
-                  <option value="BUSCANDO">🔍 Buscando (Pendiente por conseguir)</option>
-                  <option value="DESEADO">★ En Lista de Deseos (Wishlist)</option>
-                  <option value="APARTADO">📌 Apartada / Reservada</option>
-                  <option value="ADQUIRIDO">✓ Adquirida / En Vitrina</option>
-                  <option value="EN_MANTENIMIENTO">🛠️ En Mantenimiento / Restauración</option>
-                  <option value="INTERCAMBIO">🔄 Disponible para Intercambio</option>
-                  <option value="VENTA">🏷️ Disponible para Venta</option>
-                </select>
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Fabricante Diecast</label>
+                  <select
+                    value={fabricante}
+                    onChange={(e) => setFabricante(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500"
+                  >
+                    <option value="Hot Wheels Premium">Hot Wheels Premium</option>
+                    <option value="Hot Wheels Mainline">Hot Wheels Mainline</option>
+                    <option value="Greenlight Hollywood">Greenlight Hollywood</option>
+                    <option value="Matchbox Collectors">Matchbox Collectors</option>
+                    <option value="Jada Toys">Jada Toys</option>
+                    <option value="Maisto">Maisto</option>
+                    <option value="Bburago">Bburago</option>
+                    <option value="Solido">Solido</option>
+                    <option value="Tomica">Tomica</option>
+                    <option value="Kyosho">Kyosho</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Fabricante Diecast</label>
-                <select
-                  value={fabricante}
-                  onChange={(e) => setFabricante(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500"
-                >
-                  <option value="Hot Wheels Premium">Hot Wheels Premium</option>
-                  <option value="Greenlight Hollywood">Greenlight Hollywood</option>
-                  <option value="Matchbox Collectors">Matchbox Collectors</option>
-                  <option value="Jada Toys">Jada Toys</option>
-                  <option value="Maisto">Maisto</option>
-                  <option value="Bburago">Bburago</option>
-                  <option value="Solido">Solido</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Escala</label>
                   <select
@@ -551,42 +567,73 @@ export default function CatalogoAutos() {
                     onChange={(e) => setEscala(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500"
                   >
-                    <option value="1:64">1:64 (Económico)</option>
-                    <option value="1:43">1:43 (Detalle)</option>
-                    <option value="1:18">1:18 (Coleccionista)</option>
+                    <option value="1:64">1:64 (Estándar / Blister)</option>
+                    <option value="1:43">1:43 (Mediano / Detalle)</option>
+                    <option value="1:24">1:24 (Grande)</option>
+                    <option value="1:18">1:18 (Coleccionista Premium)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Estado en la Vitrina</label>
+                  <select
+                    value={estado}
+                    onChange={(e) => setEstado(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500 font-semibold"
+                  >
+                    <option value="ADQUIRIDO">✓ Adquirido / En Vitrina</option>
+                    <option value="BUSCANDO">🔍 Buscando</option>
+                    <option value="DESEADO">★ En Lista de Deseos</option>
+                    <option value="APARTADO">📌 Apartado / Reservado</option>
+                    <option value="INTERCAMBIO">🔄 Para Intercambio</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Empaque</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Estado del Empaque</label>
                   <select
                     value={empaque}
                     onChange={(e) => setEmpaque(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500"
                   >
-                    <option value="EN_BLISTER">En Blister / Empaque</option>
+                    <option value="EN_BLISTER">En Blister / Empaque Original</option>
                     <option value="SUELTO">Suelto / Loose</option>
-                    <option value="EN_CAJA_ACRILICA">En Caja Acrílica</option>
+                    <option value="EN_CAJA_ACRILICA">En Caja Acrílica Protectora</option>
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Precio Pagado o Estimado (COP $)</label>
-                <input
-                  type="number"
-                  value={precioCop}
-                  onChange={(e) => setPrecioCop(e.target.value)}
-                  placeholder="Ej: 45000"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Precio Pagado (COP $)</label>
+                  <input
+                    type="number"
+                    value={precioCop}
+                    onChange={(e) => setPrecioCop(e.target.value)}
+                    placeholder="Ej: 45000"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Observaciones / Color / Variante</label>
+                  <input
+                    type="text"
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                    placeholder="Ej: Edición especial roja / Llantas de goma"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => { setSelectedAuto(null); setSelectedFile(null); setImagePreview(null); }}
+                  onClick={() => setSelectedAuto(null)}
                   className="flex-1 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-700 transition"
                 >
                   Cancelar
@@ -596,7 +643,7 @@ export default function CatalogoAutos() {
                   disabled={saving}
                   className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-medium hover:bg-red-500 transition shadow-lg shadow-red-500/20"
                 >
-                  {saving ? 'Guardando...' : existingRecordId ? 'Actualizar Datos' : 'Confirmar & Guardar'}
+                  {saving ? 'Guardando...' : editingRecordId ? 'Actualizar Variante' : 'Guardar en Mi Vitrina'}
                 </button>
               </div>
             </form>
