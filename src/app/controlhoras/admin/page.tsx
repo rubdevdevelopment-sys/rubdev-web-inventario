@@ -4,17 +4,16 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { 
-  ShieldCheck, ArrowLeft, Users, Plus, Edit2, KeyRound
+  ShieldCheck, ArrowLeft, Users, Plus, Edit2, KeyRound, RefreshCw
 } from 'lucide-react';
 
 export default function AdminControlHoras() {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [metas, setMetas] = useState<any[]>([]);
   const [registros, setRegistros] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Formulario de configuración
+  // Campos del formulario
   const [emailFunc, setEmailFunc] = useState('');
   const [nombreFunc, setNombreFunc] = useState('');
   const [horasReq, setHorasReq] = useState(40);
@@ -22,33 +21,36 @@ export default function AdminControlHoras() {
   const [esAdmin, setEsAdmin] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      cargarDatosAdmin();
-    });
+    cargarDatosAdmin();
   }, []);
 
   const cargarDatosAdmin = async () => {
     setLoading(true);
     try {
-      // Consultar la tabla de metas completa
+      // 1. Obtener todos los funcionarios de la tabla control_horas_metas
       const { data: metasData, error: metasError } = await supabase
         .from('control_horas_metas')
         .select('*')
         .order('funcionario_nombre', { ascending: true });
 
-      if (metasError) console.error("Error consultando metas:", metasError);
-      if (metasData) setMetas(metasData);
+      if (metasError) {
+        console.error("Error al consultar control_horas_metas:", metasError);
+      } else if (metasData) {
+        setMetas(metasData);
+      }
 
-      // Consultar registros
+      // 2. Obtener registros para el cálculo de avances
       const { data: regData, error: regError } = await supabase
         .from('control_horas_registros')
         .select('*');
 
-      if (regError) console.error("Error consultando registros:", regError);
-      if (regData) setRegistros(regData);
+      if (regError) {
+        console.error("Error al consultar control_horas_registros:", regError);
+      } else if (regData) {
+        setRegistros(regData);
+      }
     } catch (err) {
-      console.error("Error inesperado en Admin:", err);
+      console.error("Error inesperado:", err);
     } finally {
       setLoading(false);
     }
@@ -74,12 +76,13 @@ export default function AdminControlHoras() {
       setIsModalOpen(false);
       cargarDatosAdmin();
     } else {
-      alert('Error al guardar configuración: ' + error.message);
+      alert('Error al guardar: ' + error.message);
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+      {/* Encabezado Institucional */}
       <div className="w-full bg-[#001f54] py-3 px-6 flex justify-center items-center border-b border-amber-500/30">
         <img src="/header-ejrlb.png" alt="Escuela Judicial" className="h-12 object-contain" />
       </div>
@@ -94,19 +97,29 @@ export default function AdminControlHoras() {
           </h1>
         </div>
 
-        <button
-          onClick={() => {
-            setEmailFunc('');
-            setNombreFunc('');
-            setHorasReq(40);
-            setFechaInicio('2026-10-01');
-            setEsAdmin(false);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition"
-        >
-          <Plus className="w-4 h-4" /> Configurar Funcionario
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={cargarDatosAdmin}
+            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition"
+            title="Recargar datos"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            onClick={() => {
+              setEmailFunc('');
+              setNombreFunc('');
+              setHorasReq(40);
+              setFechaInicio('2026-10-01');
+              setEsAdmin(false);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition"
+          >
+            <Plus className="w-4 h-4" /> Configurar Funcionario
+          </button>
+        </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
@@ -127,12 +140,18 @@ export default function AdminControlHoras() {
                   <th className="px-6 py-3">Meta Requerida</th>
                   <th className="px-6 py-3">Compensado</th>
                   <th className="px-6 py-3">Avance</th>
-                  <th className="px-6 py-3">Rol</th>
+                  <th className="px-6 py-3">Rol Admin</th>
                   <th className="px-6 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {metas.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8 text-slate-500">
+                      Cargando personal desde la base de datos...
+                    </td>
+                  </tr>
+                ) : metas.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-8 text-slate-500">
                       No hay funcionarios configurados en la base de datos.
@@ -177,7 +196,6 @@ export default function AdminControlHoras() {
                               setIsModalOpen(true);
                             }}
                             className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                            title="Editar Funcionario"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
