@@ -2,9 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
-import { Lock, Mail, KeyRound, ShieldAlert, ArrowLeft, Sparkles } from 'lucide-react';
+import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
+import { Mail, KeyRound, ShieldAlert, Sparkles } from 'lucide-react';
 
 function FormularioLoginContent() {
   const router = useRouter();
@@ -30,14 +29,14 @@ function FormularioLoginContent() {
     setErrorMessage(null);
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       password: password,
     });
 
     if (error) {
       setErrorMessage(
         error.message === 'Invalid login credentials'
-          ? 'Credenciales incorrectas. Verifica tu correo y contraseña.'
+          ? 'Credenciales incorrectas. Verifica tu correo institucional y contraseña.'
           : error.message
       );
       setLoading(false);
@@ -57,7 +56,7 @@ function FormularioLoginContent() {
           Control de Horas <span className="text-amber-400">Fin de Año</span>
         </h2>
         <p className="text-xs text-slate-400">
-          Ingresa tus credenciales para registrar tus horas compensadas.
+          Acceso exclusivo para servidores registrados en la compensación de tiempo
         </p>
       </div>
 
@@ -70,7 +69,7 @@ function FormularioLoginContent() {
 
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Correo Electrónico</label>
+          <label className="block text-xs font-medium text-slate-400 mb-1">Correo Electrónico Institucional</label>
           <div className="relative">
             <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
             <input
@@ -104,7 +103,7 @@ function FormularioLoginContent() {
           disabled={loading}
           className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-amber-500/20 mt-2"
         >
-          {loading ? 'Verificando...' : 'Iniciar Sesión'}
+          {loading ? 'Verificando credenciales...' : 'Iniciar Sesión'}
         </button>
       </form>
     </div>
@@ -119,7 +118,7 @@ export default function LoginPage() {
       </div>
 
       <div className="max-w-md w-full my-auto">
-        <Suspense fallback={<div className="text-center text-xs text-slate-500">Cargando módulo...</div>}>
+        <Suspense fallback={<div className="text-center text-xs text-slate-500">Cargando módulo de autenticación...</div>}>
           <FormularioLoginContent />
         </Suspense>
       </div>

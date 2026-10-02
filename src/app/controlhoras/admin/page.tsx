@@ -2,23 +2,31 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
 import { 
-  ShieldCheck, ArrowLeft, Users, Plus, Edit2, KeyRound, RefreshCw
+  ShieldCheck, ArrowLeft, Users, Plus, Edit2, KeyRound, RefreshCw, Lock
 } from 'lucide-react';
 
 export default function AdminControlHoras() {
   const [metas, setMetas] = useState<any[]>([]);
   const [registros, setRegistros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Campos del formulario
+  // Modales
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  // Formulario Funcionario
   const [emailFunc, setEmailFunc] = useState('');
   const [nombreFunc, setNombreFunc] = useState('');
   const [horasReq, setHorasReq] = useState(40);
   const [fechaInicio, setFechaInicio] = useState('2026-10-01');
   const [esAdmin, setEsAdmin] = useState(false);
+
+  // Formulario Contraseña
+  const [targetEmailPass, setTargetEmailPass] = useState('');
+  const [nuevaPass, setNuevaPass] = useState('');
+  const [passLoading, setPassLoading] = useState(false);
 
   useEffect(() => {
     cargarDatosAdmin();
@@ -27,30 +35,20 @@ export default function AdminControlHoras() {
   const cargarDatosAdmin = async () => {
     setLoading(true);
     try {
-      // 1. Obtener todos los funcionarios de la tabla control_horas_metas
-      const { data: metasData, error: metasError } = await supabase
+      const { data: metasData } = await supabase
         .from('control_horas_metas')
         .select('*')
         .order('funcionario_nombre', { ascending: true });
 
-      if (metasError) {
-        console.error("Error al consultar control_horas_metas:", metasError);
-      } else if (metasData) {
-        setMetas(metasData);
-      }
+      if (metasData) setMetas(metasData);
 
-      // 2. Obtener registros para el cálculo de avances
-      const { data: regData, error: regError } = await supabase
+      const { data: regData } = await supabase
         .from('control_horas_registros')
         .select('*');
 
-      if (regError) {
-        console.error("Error al consultar control_horas_registros:", regError);
-      } else if (regData) {
-        setRegistros(regData);
-      }
+      if (regData) setRegistros(regData);
     } catch (err) {
-      console.error("Error inesperado:", err);
+      console.error("Error:", err);
     } finally {
       setLoading(false);
     }
@@ -80,9 +78,32 @@ export default function AdminControlHoras() {
     }
   };
 
+  const cambiarPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassLoading(true);
+
+    try {
+      const { error } = await supabase.rpc('admin_cambiar_password_funcionario', {
+        target_email: targetEmailPass,
+        new_password: nuevaPass
+      });
+
+      if (!error) {
+        alert(`Contraseña actualizada con éxito para ${targetEmailPass}`);
+        setIsPasswordModalOpen(false);
+        setNuevaPass('');
+      } else {
+        alert('Error cambiando contraseña: ' + error.message);
+      }
+    } catch (err: any) {
+      alert('Error de ejecución: ' + err.message);
+    } finally {
+      setPassLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Encabezado Institucional */}
       <div className="w-full bg-[#001f54] py-3 px-6 flex justify-center items-center border-b border-amber-500/30">
         <img src="/header-ejrlb.png" alt="Escuela Judicial" className="h-12 object-contain" />
       </div>
@@ -140,77 +161,74 @@ export default function AdminControlHoras() {
                   <th className="px-6 py-3">Meta Requerida</th>
                   <th className="px-6 py-3">Compensado</th>
                   <th className="px-6 py-3">Avance</th>
-                  <th className="px-6 py-3">Rol Admin</th>
+                  <th className="px-6 py-3">Rol</th>
                   <th className="px-6 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-8 text-slate-500">
-                      Cargando personal desde la base de datos...
-                    </td>
-                  </tr>
-                ) : metas.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-8 text-slate-500">
-                      No hay funcionarios configurados en la base de datos.
-                    </td>
-                  </tr>
-                ) : (
-                  metas.map((m) => {
-                    const comp = registros
-                      .filter(r => r.funcionario_email === m.funcionario_email)
-                      .reduce((acc, r) => acc + Number(r.horas_totales_dia || 0), 0);
-                    const pct = Math.min(100, (comp / m.horas_totales_requeridas) * 100);
+                {metas.map((m) => {
+                  const comp = registros
+                    .filter(r => r.funcionario_email === m.funcionario_email)
+                    .reduce((acc, r) => acc + Number(r.horas_totales_dia || 0), 0);
+                  const pct = Math.min(100, (comp / m.horas_totales_requeridas) * 100);
 
-                    return (
-                      <tr key={m.id} className="hover:bg-slate-800/40 transition">
-                        <td className="px-6 py-4 font-medium text-white">
-                          {m.funcionario_nombre}
-                          <span className="block text-[10px] text-slate-500">{m.funcionario_email}</span>
-                        </td>
-                        <td className="px-6 py-4 font-mono">{m.fecha_inicio_periodo}</td>
-                        <td className="px-6 py-4 font-bold">{m.horas_totales_requeridas} hrs</td>
-                        <td className="px-6 py-4 font-bold text-emerald-400">{comp.toFixed(1)} hrs</td>
-                        <td className="px-6 py-4">
-                          <span className={`font-bold ${pct >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {pct.toFixed(0)}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {m.es_admin ? (
-                            <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-bold">Admin</span>
-                          ) : (
-                            <span className="text-slate-500">Usuario</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => {
-                              setEmailFunc(m.funcionario_email);
-                              setNombreFunc(m.funcionario_nombre);
-                              setHorasReq(m.horas_totales_requeridas);
-                              setFechaInicio(m.fecha_inicio_periodo);
-                              setEsAdmin(m.es_admin);
-                              setIsModalOpen(true);
-                            }}
-                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
+                  return (
+                    <tr key={m.id} className="hover:bg-slate-800/40 transition">
+                      <td className="px-6 py-4 font-medium text-white">
+                        {m.funcionario_nombre}
+                        <span className="block text-[10px] text-slate-500">{m.funcionario_email}</span>
+                      </td>
+                      <td className="px-6 py-4 font-mono">{m.fecha_inicio_periodo}</td>
+                      <td className="px-6 py-4 font-bold">{m.horas_totales_requeridas} hrs</td>
+                      <td className="px-6 py-4 font-bold text-emerald-400">{comp.toFixed(1)} hrs</td>
+                      <td className="px-6 py-4">
+                        <span className={`font-bold ${pct >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          {pct.toFixed(0)}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {m.es_admin ? (
+                          <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-bold">Admin</span>
+                        ) : (
+                          <span className="text-slate-500">Usuario</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right flex justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setTargetEmailPass(m.funcionario_email);
+                            setIsPasswordModalOpen(true);
+                          }}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg transition"
+                          title="Cambiar Contraseña"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEmailFunc(m.funcionario_email);
+                            setNombreFunc(m.funcionario_nombre);
+                            setHorasReq(m.horas_totales_requeridas);
+                            setFechaInicio(m.fecha_inicio_periodo);
+                            setEsAdmin(m.es_admin);
+                            setIsModalOpen(true);
+                          }}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                          title="Editar Datos Meta"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       </main>
 
-      {/* Modal para Crear / Editar Funcionario */}
+      {/* Modal 1: Crear / Editar Funcionario */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -253,7 +271,7 @@ export default function AdminControlHoras() {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 mb-1 block">Fecha Inicio Periodo</label>
+                  <label className="text-slate-400 mb-1 block">Fecha Inicio</label>
                   <input
                     type="date"
                     value={fechaInicio}
@@ -286,6 +304,51 @@ export default function AdminControlHoras() {
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl"
                 >
                   Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2: Cambiar Contraseña */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Lock className="w-4 h-4 text-amber-400" /> Cambiar Contraseña
+            </h3>
+            <p className="text-xs text-slate-400">
+              Servidor: <strong className="text-amber-400">{targetEmailPass}</strong>
+            </p>
+
+            <form onSubmit={cambiarPassword} className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-400 mb-1 block">Nueva Contraseña</label>
+                <input
+                  type="password"
+                  value={nuevaPass}
+                  onChange={(e) => setNuevaPass(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={passLoading}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl"
+                >
+                  {passLoading ? 'Actualizando...' : 'Actualizar Clave'}
                 </button>
               </div>
             </form>

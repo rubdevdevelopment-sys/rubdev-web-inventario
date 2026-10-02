@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
 import {
-  Clock, Calendar, CheckCircle2, Plus, Edit2,
-  Sparkles, ShieldCheck, LogOut, FileText, TrendingUp, FileSpreadsheet
+  Clock, Calendar, Plus, Edit2,
+  Sparkles, ShieldCheck, LogOut, FileSpreadsheet, TrendingUp
 } from 'lucide-react';
 
 export default function ControlHorasDashboard() {
+  const router = useRouter();
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState<any>(null);
@@ -25,19 +27,27 @@ export default function ControlHorasDashboard() {
   const [descripcion, setDescripcion] = useState('');
 
   useEffect(() => {
+    // Protección de Ruta: Verificar si está logueado
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user.email) cargarDatos(session.user.email);
-      else setLoading(false);
+      if (!session?.user.email) {
+        router.push('/controlhoras/login?next=/controlhoras');
+      } else {
+        setSession(session);
+        cargarDatos(session.user.email);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user.email) cargarDatos(session.user.email);
+      if (!session?.user.email) {
+        router.push('/controlhoras/login?next=/controlhoras');
+      } else {
+        setSession(session);
+        cargarDatos(session.user.email);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   const cargarDatos = async (email: string) => {
     setLoading(true);
@@ -144,7 +154,6 @@ export default function ControlHorasDashboard() {
   const pendientes = Math.max(0, horasRequeridas - totalCompensado);
   const porcentaje = Math.min(100, (totalCompensado / horasRequeridas) * 100);
 
-  // Estimado dinámico
   const calcularEstimadoFecha = () => {
     if (pendientes <= 0) return '¡Meta completada!';
     if (registros.length === 0) return 'Sin datos suficientes para calcular';
@@ -162,6 +171,14 @@ export default function ControlHorasDashboard() {
     }
     return fechaActual.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center font-sans">
+        <p className="text-xs text-slate-400 animate-pulse">Verificando sesión y cargando datos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
@@ -195,25 +212,16 @@ export default function ControlHorasDashboard() {
               href="/controlhoras/admin"
               className="flex items-center gap-1.5 px-3 py-2 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold rounded-xl transition"
             >
-              <ShieldCheck className="w-4 h-4" /> Admin
+              <ShieldCheck className="w-4 h-4" /> Panel Admin
             </Link>
           )}
 
-          {session ? (
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700 rounded-xl transition"
-            >
-              <LogOut className="w-3.5 h-3.5" /> Salir ({session.user.email?.split('@')[0]})
-            </button>
-          ) : (
-            <Link
-              href="/controlhoras/login"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition"
-            >
-              Iniciar Sesión
-            </Link>
-          )}
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700 rounded-xl transition"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Salir ({session?.user?.email?.split('@')[0]})
+          </button>
         </div>
       </header>
 
