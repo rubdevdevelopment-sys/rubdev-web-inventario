@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import {
-  ShieldCheck, ArrowLeft, Users, Plus, Edit2,
-  Check, X, FileSpreadsheet, Lock
+import { 
+  ShieldCheck, ArrowLeft, Users, Plus, Edit2, KeyRound
 } from 'lucide-react';
 
 export default function AdminControlHoras() {
@@ -15,7 +14,7 @@ export default function AdminControlHoras() {
   const [registros, setRegistros] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Formulario de configuración de funcionario
+  // Formulario de configuración
   const [emailFunc, setEmailFunc] = useState('');
   const [nombreFunc, setNombreFunc] = useState('');
   const [horasReq, setHorasReq] = useState(40);
@@ -25,30 +24,31 @@ export default function AdminControlHoras() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) cargarDatosAdmin();
-      else setLoading(false);
+      cargarDatosAdmin();
     });
   }, []);
 
   const cargarDatosAdmin = async () => {
     setLoading(true);
     try {
-      const { data: metasData } = await supabase
+      // Consultar la tabla de metas completa
+      const { data: metasData, error: metasError } = await supabase
         .from('control_horas_metas')
         .select('*')
-        .eq('periodo_anio', 2026)
         .order('funcionario_nombre', { ascending: true });
 
+      if (metasError) console.error("Error consultando metas:", metasError);
       if (metasData) setMetas(metasData);
 
-      const { data: regData } = await supabase
+      // Consultar registros
+      const { data: regData, error: regError } = await supabase
         .from('control_horas_registros')
-        .select('*')
-        .eq('periodo_anio', 2026);
+        .select('*');
 
+      if (regError) console.error("Error consultando registros:", regError);
       if (regData) setRegistros(regData);
     } catch (err) {
-      console.error(err);
+      console.error("Error inesperado en Admin:", err);
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export default function AdminControlHoras() {
       setIsModalOpen(false);
       cargarDatosAdmin();
     } else {
-      alert('Error al guardar: ' + error.message);
+      alert('Error al guardar configuración: ' + error.message);
     }
   };
 
@@ -127,62 +127,72 @@ export default function AdminControlHoras() {
                   <th className="px-6 py-3">Meta Requerida</th>
                   <th className="px-6 py-3">Compensado</th>
                   <th className="px-6 py-3">Avance</th>
-                  <th className="px-6 py-3">Rol Admin</th>
+                  <th className="px-6 py-3">Rol</th>
                   <th className="px-6 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {metas.map((m) => {
-                  const comp = registros
-                    .filter(r => r.funcionario_email === m.funcionario_email)
-                    .reduce((acc, r) => acc + Number(r.horas_totales_dia || 0), 0);
-                  const pct = Math.min(100, (comp / m.horas_totales_requeridas) * 100);
+                {metas.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8 text-slate-500">
+                      No hay funcionarios configurados en la base de datos.
+                    </td>
+                  </tr>
+                ) : (
+                  metas.map((m) => {
+                    const comp = registros
+                      .filter(r => r.funcionario_email === m.funcionario_email)
+                      .reduce((acc, r) => acc + Number(r.horas_totales_dia || 0), 0);
+                    const pct = Math.min(100, (comp / m.horas_totales_requeridas) * 100);
 
-                  return (
-                    <tr key={m.id} className="hover:bg-slate-800/40 transition">
-                      <td className="px-6 py-4 font-medium text-white">
-                        {m.funcionario_nombre}
-                        <span className="block text-[10px] text-slate-500">{m.funcionario_email}</span>
-                      </td>
-                      <td className="px-6 py-4 font-mono">{m.fecha_inicio_periodo}</td>
-                      <td className="px-6 py-4 font-bold">{m.horas_totales_requeridas} hrs</td>
-                      <td className="px-6 py-4 font-bold text-emerald-400">{comp.toFixed(1)} hrs</td>
-                      <td className="px-6 py-4">
-                        <span className={`font-bold ${pct >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                          {pct.toFixed(0)}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {m.es_admin ? (
-                          <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-bold">Admin</span>
-                        ) : (
-                          <span className="text-slate-500">Usuario</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => {
-                            setEmailFunc(m.funcionario_email);
-                            setNombreFunc(m.funcionario_nombre);
-                            setHorasReq(m.horas_totales_requeridas);
-                            setFechaInicio(m.fecha_inicio_periodo);
-                            setEsAdmin(m.es_admin);
-                            setIsModalOpen(true);
-                          }}
-                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                    return (
+                      <tr key={m.id} className="hover:bg-slate-800/40 transition">
+                        <td className="px-6 py-4 font-medium text-white">
+                          {m.funcionario_nombre}
+                          <span className="block text-[10px] text-slate-500">{m.funcionario_email}</span>
+                        </td>
+                        <td className="px-6 py-4 font-mono">{m.fecha_inicio_periodo}</td>
+                        <td className="px-6 py-4 font-bold">{m.horas_totales_requeridas} hrs</td>
+                        <td className="px-6 py-4 font-bold text-emerald-400">{comp.toFixed(1)} hrs</td>
+                        <td className="px-6 py-4">
+                          <span className={`font-bold ${pct >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {pct.toFixed(0)}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {m.es_admin ? (
+                            <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-bold">Admin</span>
+                          ) : (
+                            <span className="text-slate-500">Usuario</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => {
+                              setEmailFunc(m.funcionario_email);
+                              setNombreFunc(m.funcionario_nombre);
+                              setHorasReq(m.horas_totales_requeridas);
+                              setFechaInicio(m.fecha_inicio_periodo);
+                              setEsAdmin(m.es_admin);
+                              setIsModalOpen(true);
+                            }}
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                            title="Editar Funcionario"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </main>
 
+      {/* Modal para Crear / Editar Funcionario */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -190,12 +200,12 @@ export default function AdminControlHoras() {
 
             <form onSubmit={guardarConfiguracion} className="space-y-3 text-xs">
               <div>
-                <label className="text-slate-400 mb-1 block">Correo Electrónico</label>
+                <label className="text-slate-400 mb-1 block">Correo Electrónico Institucional</label>
                 <input
                   type="email"
                   value={emailFunc}
                   onChange={(e) => setEmailFunc(e.target.value)}
-                  placeholder="usuario@ramajudicial.gov.co"
+                  placeholder="usuario@cendoj.ramajudicial.gov.co"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200"
                   required
                 />
@@ -215,7 +225,7 @@ export default function AdminControlHoras() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 mb-1 block">Horas Meta (ej: 32 o 40)</label>
+                  <label className="text-slate-400 mb-1 block">Meta (32.0 o 40.0 hrs)</label>
                   <input
                     type="number"
                     value={horasReq}
@@ -225,7 +235,7 @@ export default function AdminControlHoras() {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 mb-1 block">Fecha Inicio</label>
+                  <label className="text-slate-400 mb-1 block">Fecha Inicio Periodo</label>
                   <input
                     type="date"
                     value={fechaInicio}
