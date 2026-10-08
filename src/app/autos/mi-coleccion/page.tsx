@@ -189,33 +189,33 @@ export default function MiVitrinaColeccion() {
                       </div>
                     )}
 
-                    <div className={`absolute inset-0 z-10 flex flex-col justify-end overflow-y-auto bg-slate-950/95 p-5 transition-opacity duration-300 ${
+                    <div className={`absolute inset-0 z-10 flex flex-col gap-3 overflow-y-auto bg-slate-950 p-4 transition-opacity duration-300 ${
                       detallesAbiertos
                         ? 'opacity-100'
                         : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100'
                     }`}>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-red-400">Ficha del vehículo</p>
                       <h4 className="mt-1 text-xl font-bold text-white">{autoMaestro?.modelo_nombre || 'Modelo Desconocido'}</h4>
-                      <p className="mt-1 text-xs text-slate-300">
+                      <p className="text-xs text-slate-300">
                         {autoMaestro?.anio_vehiculo_real || 'Año no registrado'} · {autoMaestro?.pais_origen || 'País no registrado'} · {autoMaestro?.categoria || 'Categoría no registrada'}
                       </p>
-                      <p className="mt-3 max-h-24 overflow-y-auto text-sm leading-relaxed text-slate-300">
+                      <p className="text-sm leading-relaxed text-slate-300">
                         {autoMaestro?.historia_resumen || 'Sin descripción disponible.'}
                       </p>
                       {autoMaestro?.datos_curiosos && (
-                        <div className="mt-3 border-l-2 border-red-500 pl-3 text-xs leading-relaxed text-slate-300">
+                        <div className="border-l-2 border-red-500 pl-3 text-xs leading-relaxed text-slate-300">
                           <strong className="mb-1 block text-red-400">Dato curioso</strong>
                           {autoMaestro.datos_curiosos}
                         </div>
                       )}
-                      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-800 pt-3 text-xs">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-800 pt-3 text-xs">
                         <span className="text-slate-400">Fabricante</span><strong className="text-right text-white">{item.fabricante_diecast}</strong>
                         <span className="text-slate-400">Escala</span><strong className="text-right text-white">{item.escala}</strong>
                         <span className="text-slate-400">Empaque</span><strong className="text-right text-white">{item.estado_empaque}</strong>
                         <span className="text-slate-400">Valor pagado</span><strong className="text-right text-emerald-400">${item.precio_pagado_cop?.toLocaleString('es-CO')} COP</strong>
                         {item.fecha_adquisicion && <><span className="text-slate-400">Adquirido</span><strong className="text-right text-white">{new Date(item.fecha_adquisicion).toLocaleDateString('es-CO')}</strong></>}
                       </div>
-                      {item.observaciones && <p className="mt-3 text-xs leading-relaxed text-amber-300">{item.observaciones}</p>}
+                      {item.observaciones && <p className="text-xs leading-relaxed text-amber-300">{item.observaciones}</p>}
                     </div>
 
                     <button
@@ -223,10 +223,10 @@ export default function MiVitrinaColeccion() {
                       onClick={() => setDetalleItemAbierto(detallesAbiertos ? null : item.id)}
                       aria-label={detallesAbiertos ? 'Cerrar detalles del vehículo' : 'Ver detalles del vehículo'}
                       aria-pressed={detallesAbiertos}
-                      className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-slate-950/90 px-3 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                      title={detallesAbiertos ? 'Cerrar ficha del vehículo' : 'Ver ficha del vehículo'}
+                      className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-slate-900 text-white shadow-lg transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
                     >
                       {detallesAbiertos ? <X className="h-3.5 w-3.5" /> : <Info className="h-3.5 w-3.5" />}
-                      {detallesAbiertos ? 'Cerrar ficha' : 'Ver ficha'}
                     </button>
                   </div>
 
