@@ -56,7 +56,7 @@ export default function HojaDeVidaActivo() {
 
         if (activoData) {
             setActivo(activoData);
-            setNuevoFuncionarioId(activoData.funcionario_id || '');
+            setNuevoFuncionarioId(activoData.estado_activo === 'ALMACEN' ? '' : activoData.funcionario_id || '');
             setNuevaUbicacion(activoData.ubicacion_actual || '');
             setNuevoEstado(activoData.estado_activo || 'EN_SERVICIO');
 
@@ -101,7 +101,7 @@ export default function HojaDeVidaActivo() {
         try {
             const { error } = await supabase.rpc('registrar_movimiento_activo', {
                 p_activo_id: activo.id,
-                p_nuevo_funcionario_id: nuevoFuncionarioId,
+                p_nuevo_funcionario_id: nuevoEstado === 'ALMACEN' ? null : nuevoFuncionarioId || null,
                 p_nueva_ubicacion: nuevaUbicacion,
                 p_nuevo_estado: nuevoEstado,
                 p_tipo_movimiento: tipoMovimiento,
@@ -223,7 +223,7 @@ export default function HojaDeVidaActivo() {
                                 <User className="w-5 h-5 text-emerald-400 shrink-0" />
                                 <div>
                                     <p className="text-xs text-slate-400">Servidor Responsable Actual</p>
-                                    <p className="font-semibold">{activo.funcionarios?.nombre_completo || 'Sin Asignar'}</p>
+                                    <p className="font-semibold">{activo.estado_activo === 'ALMACEN' ? 'Almacén' : activo.funcionarios?.nombre_completo || 'Sin Asignar'}</p>
                                 </div>
                             </div>
 
@@ -245,7 +245,7 @@ export default function HojaDeVidaActivo() {
                                             activo.estado_activo === 'DEVOLUCION' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
                                                 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                         }`}>
-                                        {activo.estado_activo === 'DEVOLUCION' ? 'Devolución' : activo.estado_activo}
+                                        {activo.estado_activo === 'DEVOLUCION' ? 'Devolución' : activo.estado_activo === 'ALMACEN' ? 'En Almacén' : activo.estado_activo}
                                     </span>
                                 </div>
                             </div>
@@ -274,7 +274,7 @@ export default function HojaDeVidaActivo() {
                         </p>
                     ) : (
                         <div className="space-y-6 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-800">
-                            {movimientos.map((mov) => (
+                            {movimientos.map((mov, index) => (
                                 <div key={mov.id} className="relative pl-8">
                                     <div className="absolute left-2 top-1.5 w-3 h-3 bg-blue-500 rounded-full ring-4 ring-slate-900" />
                                     <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
@@ -289,7 +289,7 @@ export default function HojaDeVidaActivo() {
 
                                         <p className="text-xs text-slate-300 mb-1">
                                             <strong>Responsable anterior:</strong> {mov.f_anterior?.nombre_completo || 'Sin registro'} →
-                                            <strong className="text-emerald-400"> Nuevo:</strong> {mov.f_nuevo?.nombre_completo || 'Sin registro'}
+                                            <strong className="text-emerald-400"> Nuevo:</strong> {activo.estado_activo === 'ALMACEN' && index === 0 && !mov.f_nuevo ? 'Almacén' : mov.f_nuevo?.nombre_completo || 'Sin registro'}
                                         </p>
 
                                         <p className="text-xs text-slate-400 mb-2">
@@ -339,8 +339,11 @@ export default function HojaDeVidaActivo() {
                                 <select
                                     value={nuevoFuncionarioId}
                                     onChange={(e) => setNuevoFuncionarioId(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                                    disabled={nuevoEstado === 'ALMACEN'}
+                                    required={nuevoEstado !== 'ALMACEN'}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60"
                                 >
+                                    {nuevoEstado === 'ALMACEN' ? <option value="">Almacén</option> : <option value="">Seleccione un servidor responsable</option>}
                                     {funcionarios.map((f) => (
                                         <option key={f.id} value={f.id}>{f.nombre_completo}</option>
                                     ))}
@@ -363,7 +366,10 @@ export default function HojaDeVidaActivo() {
                                 <label className="block text-xs font-medium text-slate-400 mb-1">Estado del Activo</label>
                                 <select
                                     value={nuevoEstado}
-                                    onChange={(e) => setNuevoEstado(e.target.value)}
+                                    onChange={(e) => {
+                                        setNuevoEstado(e.target.value);
+                                        if (e.target.value === 'ALMACEN') setNuevoFuncionarioId('');
+                                    }}
                                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
                                 >
                                     <option value="CONFIRMADO">Confirmado</option>

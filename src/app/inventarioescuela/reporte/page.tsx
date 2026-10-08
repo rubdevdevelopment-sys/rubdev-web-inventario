@@ -50,6 +50,7 @@ export default function ReportePorResponsable() {
           categorias (nombre)
         `)
                 .eq('funcionario_id', selectedFuncionarioId)
+                .neq('estado_activo', 'ALMACEN')
                 .order('descripcion', { ascending: true });
 
             if (data) setActivosResponsable(data);

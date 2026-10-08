@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { 
-  Car, ArrowLeft, RefreshCw, DollarSign, 
+import {
+  ArrowLeft, RefreshCw, DollarSign,
   Package, Camera, Award, Calendar, Globe, Sparkles 
 } from 'lucide-react';
 
@@ -38,7 +38,6 @@ interface MiColeccionItem {
 export default function MiVitrinaColeccion() {
   const [items, setItems] = useState<MiColeccionItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filtroEstado, setFiltroEstado] = useState('TODOS');
 
   // Cargar elementos de la vitrina con join completo al catálogo maestro
   const fetchVitrina = async () => {
@@ -50,6 +49,7 @@ export default function MiVitrinaColeccion() {
           *,
           autos_catalogo_maestro (*)
         `)
+        .eq('estado', 'ADQUIRIDO')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -71,14 +71,7 @@ export default function MiVitrinaColeccion() {
   // Métricas Calculadas
   const totalInversion = items.reduce((sum, item) => sum + (item.precio_pagado_cop || 0), 0);
   const totalPiezas = items.length;
-  const adquiridas = items.filter(i => i.estado === 'ADQUIRIDO').length;
   const conFotoReal = items.filter(i => Boolean(i.foto_mi_pieza_url)).length;
-
-  // Filtrado de lista
-  const itemsFiltrados = items.filter(item => {
-    if (filtroEstado === 'TODOS') return true;
-    return item.estado === filtroEstado;
-  });
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
@@ -107,7 +100,7 @@ export default function MiVitrinaColeccion() {
 
       <main className="max-w-7xl mx-auto w-full p-6 space-y-8 flex-1">
         {/* Panel de Métricas y Estadísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center gap-4 shadow-xl">
             <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
               <DollarSign className="w-6 h-6" />
@@ -125,18 +118,8 @@ export default function MiVitrinaColeccion() {
               <Package className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Total Registradas</p>
+              <p className="text-xs text-slate-400 font-medium">Autos Adquiridos</p>
               <p className="text-2xl font-bold text-slate-100">{totalPiezas} piezas</p>
-            </div>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center gap-4 shadow-xl">
-            <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
-              <Car className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 font-medium">En Vitrina (Adquiridas)</p>
-              <p className="text-2xl font-bold text-emerald-400">{adquiridas}</p>
             </div>
           </div>
 
@@ -151,44 +134,16 @@ export default function MiVitrinaColeccion() {
           </div>
         </div>
 
-        {/* Filtros por Estado */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Filtrar mi colección:
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'TODOS', label: 'Ver Todos' },
-              { id: 'ADQUIRIDO', label: '✓ En Vitrina' },
-              { id: 'BUSCANDO', label: '🔍 Buscando' },
-              { id: 'DESEADO', label: '★ En Deseos' },
-              { id: 'APARTADO', label: '📌 Apartados' }
-            ].map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFiltroEstado(f.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                  filtroEstado === f.id
-                    ? 'bg-red-600 text-white'
-                    : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Grilla de Piezas en Vitrina con Información Completa del Catálogo + Datos de la Pieza */}
         {loading ? (
           <div className="text-center py-16 text-slate-500">Cargando vitrina personal...</div>
-        ) : itemsFiltrados.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="text-center py-16 text-slate-500 bg-slate-900/50 rounded-3xl border border-slate-800">
-            No se encontraron piezas en esta categoría.
+            Aún no tienes autos adquiridos en tu vitrina personal.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {itemsFiltrados.map((item) => {
+            {items.map((item) => {
               const autoMaestro = item.autos_catalogo_maestro;
               
               const fotoReal = item.foto_auto_real_url || autoMaestro?.imagen_referencia_url;

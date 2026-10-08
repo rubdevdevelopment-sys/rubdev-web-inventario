@@ -217,7 +217,7 @@ export default function InventarioDashboard() {
                 serie: newSerie.trim() || null,
                 valor: newValor ? parseFloat(newValor) : 0,
                 categoria_id: newCategoriaId || null,
-                funcionario_id: newFuncionarioId || null,
+                funcionario_id: newEstado === 'ALMACEN' ? null : newFuncionarioId || null,
                 ubicacion_actual: newUbicacion.trim(),
                 estado_activo: newEstado,
                 num_documento: newNumDoc.trim() || null,
@@ -251,7 +251,8 @@ export default function InventarioDashboard() {
             item.placa.toLowerCase().includes(search.toLowerCase()) ||
             item.descripcion.toLowerCase().includes(search.toLowerCase()) ||
             (item.codigo_contable && item.codigo_contable.toLowerCase().includes(search.toLowerCase())) ||
-            (item.funcionarios?.nombre_completo && item.funcionarios.nombre_completo.toLowerCase().includes(search.toLowerCase()));
+            (item.funcionarios?.nombre_completo && item.funcionarios.nombre_completo.toLowerCase().includes(search.toLowerCase())) ||
+            (item.estado_activo === 'ALMACEN' && 'almacén'.includes(search.toLowerCase()));
 
         const matchesCat = categoriaFilter === 'TODAS' || item.categorias?.nombre === categoriaFilter;
         const matchesEstado = estadoFilter === 'TODOS' || item.estado_activo === estadoFilter;
@@ -504,7 +505,7 @@ export default function InventarioDashboard() {
                                                 {activo.categorias?.nombre || 'General'}
                                             </td>
                                             <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                                                {activo.funcionarios?.nombre_completo || 'Sin Asignar'}
+                                                {activo.estado_activo === 'ALMACEN' ? 'Almacén' : activo.funcionarios?.nombre_completo || 'Sin Asignar'}
                                             </td>
                                             <td className="py-3.5 px-4 text-right whitespace-nowrap">
                                                 <Link
@@ -694,16 +695,20 @@ export default function InventarioDashboard() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-400 mb-1">Servidor Responsable</label>
-                                    <select
-                                        value={newFuncionarioId}
-                                        onChange={(e) => setNewFuncionarioId(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
-                                    >
-                                        {funcionarios.map((f) => (
-                                            <option key={f.id} value={f.id}>{f.nombre_completo}</option>
-                                        ))}
-                                    </select>
+                                    <label className="block text-xs font-medium text-slate-400 mb-1">Responsable</label>
+                                    {newEstado === 'ALMACEN' ? (
+                                        <p className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200">Almacén</p>
+                                    ) : (
+                                        <select
+                                            value={newFuncionarioId}
+                                            onChange={(e) => setNewFuncionarioId(e.target.value)}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                                        >
+                                            {funcionarios.map((f) => (
+                                                <option key={f.id} value={f.id}>{f.nombre_completo}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
 
