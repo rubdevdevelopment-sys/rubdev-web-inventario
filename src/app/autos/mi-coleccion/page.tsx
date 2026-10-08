@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import {
   ArrowLeft, RefreshCw, DollarSign,
-  Package, Camera, Award, Calendar, Globe, Sparkles 
+  Package, Camera, Award, Info, X
 } from 'lucide-react';
 
 interface AutoCatalogo {
@@ -38,6 +38,7 @@ interface MiColeccionItem {
 export default function MiVitrinaColeccion() {
   const [items, setItems] = useState<MiColeccionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detalleItemAbierto, setDetalleItemAbierto] = useState<string | null>(null);
 
   // Cargar elementos de la vitrina con join completo al catálogo maestro
   const fetchVitrina = async () => {
@@ -71,7 +72,7 @@ export default function MiVitrinaColeccion() {
   // Métricas Calculadas
   const totalInversion = items.reduce((sum, item) => sum + (item.precio_pagado_cop || 0), 0);
   const totalPiezas = items.length;
-  const conFotoReal = items.filter(i => Boolean(i.foto_mi_pieza_url)).length;
+  const conFotoPieza = items.filter(i => Boolean(i.foto_mi_pieza_url)).length;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
@@ -128,8 +129,8 @@ export default function MiVitrinaColeccion() {
               <Camera className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Fotos Reales de mi Pieza</p>
-              <p className="text-2xl font-bold text-amber-400">{conFotoReal} / {totalPiezas}</p>
+              <p className="text-xs text-slate-400 font-medium">Piezas con foto propia</p>
+              <p className="text-2xl font-bold text-amber-400">{conFotoPieza} / {totalPiezas}</p>
             </div>
           </div>
         </div>
@@ -145,112 +146,108 @@ export default function MiVitrinaColeccion() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {items.map((item) => {
               const autoMaestro = item.autos_catalogo_maestro;
-              
+
               const fotoReal = item.foto_auto_real_url || autoMaestro?.imagen_referencia_url;
               const fotoPieza = item.foto_mi_pieza_url;
+              const imagenPrincipal = fotoPieza || fotoReal;
+              const detallesAbiertos = detalleItemAbierto === item.id;
 
               return (
-                <div 
+                <div
                   key={item.id}
-                  className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col justify-between hover:border-slate-700 transition"
+                  className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-slate-600"
                 >
-                  <div className="space-y-4">
-                    
-                    {/* Visualización Dual: Auto Real vs Mi Pieza */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-slate-400 font-semibold mb-1 text-center uppercase tracking-wide">Auto Real</span>
-                        <div className="h-36 w-full rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-800">
-                          {fotoReal ? (
-                            <img src={fotoReal} alt="Auto Real" className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-[10px] text-slate-600 text-center p-2">Sin foto real</span>
-                          )}
-                        </div>
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-950">
+                    {imagenPrincipal ? (
+                      <img
+                        src={imagenPrincipal}
+                        alt={autoMaestro?.modelo_nombre || 'Auto de colección'}
+                        className="h-full w-full object-contain p-4 transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center gap-2 text-xs text-slate-500">
+                        <Camera className="h-7 w-7 text-slate-600" />
+                        <span>Sin fotografía</span>
                       </div>
+                    )}
 
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-emerald-400 font-semibold mb-1 text-center uppercase tracking-wide">Mi Pieza</span>
-                        <div className="h-36 w-full rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-emerald-900/40">
-                          {fotoPieza ? (
-                            <img src={fotoPieza} alt="Mi Pieza" className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-[10px] text-slate-600 text-center p-2">Pendiente foto</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Franquicia y Estado */}
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="text-xs font-bold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20">
-                        {autoMaestro?.origen_franquicia || 'Colección'}
+                    <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                      <span className="rounded-md border border-white/10 bg-slate-950/85 px-2.5 py-1 text-[10px] font-semibold text-slate-200 backdrop-blur">
+                        {fotoPieza ? 'Mi pieza' : 'Foto de referencia'}
                       </span>
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                        item.estado === 'ADQUIRIDO' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        item.estado === 'BUSCANDO' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                        'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                      }`}>
-                        {item.estado}
-                      </span>
+                      {autoMaestro?.origen_franquicia && (
+                        <span className="rounded-md border border-red-500/20 bg-slate-950/85 px-2.5 py-1 text-[10px] font-semibold text-red-300 backdrop-blur">
+                          {autoMaestro.origen_franquicia}
+                        </span>
+                      )}
                     </div>
 
-                    {/* Nombre y Datos Técnicos del Catálogo */}
-                    <div>
-                      <h3 className="text-xl font-bold text-white">
-                        {autoMaestro?.modelo_nombre || 'Modelo Desconocido'}
-                      </h3>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
-                        {autoMaestro?.anio_vehiculo_real && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5 text-slate-500" /> Año: {autoMaestro.anio_vehiculo_real}
-                          </span>
-                        )}
-                        {autoMaestro?.pais_origen && (
-                          <span className="flex items-center gap-1">
-                            <Globe className="w-3.5 h-3.5 text-slate-500" /> {autoMaestro.pais_origen}
-                          </span>
-                        )}
+                    {fotoPieza && fotoReal && (
+                      <div className="absolute bottom-4 left-4 h-16 w-24 overflow-hidden rounded-md border border-white/20 bg-slate-950 shadow-xl">
+                        <img src={fotoReal} alt="Foto de referencia del auto real" className="h-full w-full object-contain p-1" />
+                        <span className="absolute inset-x-0 bottom-0 bg-slate-950/85 py-0.5 text-center text-[9px] font-semibold text-slate-200">Auto real</span>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Resumen Histórico del Catálogo */}
-                    {autoMaestro?.historia_resumen && (
-                      <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
-                        {autoMaestro.historia_resumen}
+                    <div className={`absolute inset-0 z-10 flex flex-col justify-end overflow-y-auto bg-slate-950/95 p-5 transition-opacity duration-300 ${
+                      detallesAbiertos
+                        ? 'opacity-100'
+                        : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100'
+                    }`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-red-400">Ficha del vehículo</p>
+                      <h4 className="mt-1 text-xl font-bold text-white">{autoMaestro?.modelo_nombre || 'Modelo Desconocido'}</h4>
+                      <p className="mt-1 text-xs text-slate-300">
+                        {autoMaestro?.anio_vehiculo_real || 'Año no registrado'} · {autoMaestro?.pais_origen || 'País no registrado'} · {autoMaestro?.categoria || 'Categoría no registrada'}
                       </p>
-                    )}
-
-                    {/* Dato Curioso si existe */}
-                    {autoMaestro?.datos_curiosos && (
-                      <div className="bg-slate-950/80 border border-slate-800/80 p-2.5 rounded-xl text-[11px] text-slate-400">
-                        <strong className="text-red-400 block mb-0.5">Dato Curioso:</strong>
-                        {autoMaestro.datos_curiosos}
-                      </div>
-                    )}
-
-                    {/* Detalles Específicos de la Pieza Registrada */}
-                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-xs space-y-1.5">
-                      <div className="flex justify-between text-slate-400">
-                        <span>Fabricante Diecast:</span>
-                        <strong className="text-white">{item.fabricante_diecast} ({item.escala})</strong>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Estado de Empaque:</span>
-                        <strong className="text-slate-200">{item.estado_empaque}</strong>
-                      </div>
-                      {item.observaciones && (
-                        <div className="flex justify-between text-slate-400">
-                          <span>Observaciones:</span>
-                          <strong className="text-amber-400">{item.observaciones}</strong>
+                      <p className="mt-3 max-h-24 overflow-y-auto text-sm leading-relaxed text-slate-300">
+                        {autoMaestro?.historia_resumen || 'Sin descripción disponible.'}
+                      </p>
+                      {autoMaestro?.datos_curiosos && (
+                        <div className="mt-3 border-l-2 border-red-500 pl-3 text-xs leading-relaxed text-slate-300">
+                          <strong className="mb-1 block text-red-400">Dato curioso</strong>
+                          {autoMaestro.datos_curiosos}
                         </div>
                       )}
-                      <div className="flex justify-between text-slate-400 pt-1 border-t border-slate-800/80">
-                        <span>Valor Pagado/Estimado:</span>
-                        <strong className="text-emerald-400">${item.precio_pagado_cop?.toLocaleString('es-CO')} COP</strong>
+                      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-800 pt-3 text-xs">
+                        <span className="text-slate-400">Fabricante</span><strong className="text-right text-white">{item.fabricante_diecast}</strong>
+                        <span className="text-slate-400">Escala</span><strong className="text-right text-white">{item.escala}</strong>
+                        <span className="text-slate-400">Empaque</span><strong className="text-right text-white">{item.estado_empaque}</strong>
+                        <span className="text-slate-400">Valor pagado</span><strong className="text-right text-emerald-400">${item.precio_pagado_cop?.toLocaleString('es-CO')} COP</strong>
+                        {item.fecha_adquisicion && <><span className="text-slate-400">Adquirido</span><strong className="text-right text-white">{new Date(item.fecha_adquisicion).toLocaleDateString('es-CO')}</strong></>}
                       </div>
+                      {item.observaciones && <p className="mt-3 text-xs leading-relaxed text-amber-300">{item.observaciones}</p>}
                     </div>
 
+                    <button
+                      type="button"
+                      onClick={() => setDetalleItemAbierto(detallesAbiertos ? null : item.id)}
+                      aria-label={detallesAbiertos ? 'Cerrar detalles del vehículo' : 'Ver detalles del vehículo'}
+                      aria-pressed={detallesAbiertos}
+                      className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-slate-950/90 px-3 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                    >
+                      {detallesAbiertos ? <X className="h-3.5 w-3.5" /> : <Info className="h-3.5 w-3.5" />}
+                      {detallesAbiertos ? 'Cerrar ficha' : 'Ver ficha'}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-2xl font-bold leading-tight text-white">
+                          {autoMaestro?.modelo_nombre || 'Modelo Desconocido'}
+                        </h3>
+                        <p className="mt-2 text-xs font-medium text-slate-400">
+                          {autoMaestro?.anio_vehiculo_real || 'Año no registrado'} <span className="px-1 text-red-400">·</span> {autoMaestro?.pais_origen || 'País no registrado'}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-300">
+                        Adquirido
+                      </span>
+                    </div>
+
+                    <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-300">
+                      {autoMaestro?.historia_resumen || 'Sin descripción disponible.'}
+                    </p>
                   </div>
                 </div>
               );

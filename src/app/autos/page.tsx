@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { 
   Car, Search, Plus, ArrowLeft, 
-  BookmarkCheck, Lock, LogOut, RefreshCw, Upload, Edit3, Camera, Layers, Sparkles 
+  BookmarkCheck, Lock, LogOut, RefreshCw, Upload, Edit3, Camera, Sparkles, Info, X
 } from 'lucide-react';
 
 interface AutoCatalogo {
@@ -40,6 +40,7 @@ export default function CatalogoAutos() {
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('TODOS');
   const [session, setSession] = useState<any>(null);
+  const [detalleAutoAbierto, setDetalleAutoAbierto] = useState<string | null>(null);
 
   // Modal para agregar/editar variante en la colección
   const [selectedAuto, setSelectedAuto] = useState<AutoCatalogo | null>(null);
@@ -429,99 +430,124 @@ export default function CatalogoAutos() {
               // 2. Foto de referencia del catálogo maestro
               // 3. Foto de auto real guardada en las variantes
               // 4. Null (muestra "Sin fotografía")
-              const imagenAMostrar = varianteConPieza?.foto_mi_pieza_url 
-                || auto.imagen_referencia_url 
+              const imagenAMostrar = auto.imagen_referencia_url
                 || varianteConReal?.foto_auto_real_url 
+                || varianteConPieza?.foto_mi_pieza_url
                 || null;
+              const detallesAbiertos = detalleAutoAbierto === auto.id;
 
               return (
                 <div
                   key={auto.id}
-                  className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between hover:border-slate-700 transition overflow-hidden"
+                  className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-slate-600"
                 >
-                  <div className="space-y-3">
-                    {/* Contenedor de Imagen con Jerarquía & "Sin Fotografía" */}
-                    <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center border border-dashed border-slate-800 mb-3">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-950">
                       {imagenAMostrar ? (
                         <img 
                           src={imagenAMostrar} 
                           alt={auto.modelo_nombre} 
-                          className="w-full h-full object-cover"
+                          className="h-full w-full object-contain p-4 transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="text-slate-500 font-medium text-xs flex flex-col items-center gap-2">
+                        <div className="flex h-full flex-col items-center justify-center gap-2 text-xs font-medium text-slate-500">
                           <Car className="w-7 h-7 text-slate-600" />
                           <span>Sin fotografía</span>
                         </div>
                       )}
 
-                      {/* Badge indicador si ya hace parte de tu colección */}
-                      {variantesDelAuto.length > 0 && (
-                        <span className="absolute top-2.5 right-2.5 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md">
-                          ✓ En Colección
+                      <div className="absolute left-4 top-4 flex max-w-[70%] flex-wrap gap-2">
+                        <span className="rounded-md border border-white/10 bg-slate-950/85 px-2.5 py-1 text-[10px] font-semibold text-slate-200 backdrop-blur">
+                          {auto.origen_franquicia}
                         </span>
-                      )}
+                        {variantesDelAuto.some((variante) => variante.estado === 'ADQUIRIDO') && (
+                          <span className="rounded-md border border-emerald-500/30 bg-emerald-950/90 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
+                            En colección
+                          </span>
+                        )}
+                      </div>
+
+                      <div className={`absolute inset-0 z-10 flex flex-col justify-end overflow-y-auto bg-slate-950/95 p-5 transition-opacity duration-300 ${
+                        detallesAbiertos
+                          ? 'opacity-100'
+                          : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100'
+                      }`}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-400">Ficha del vehículo</p>
+                        <h4 className="mt-1 text-xl font-bold text-white">{auto.modelo_nombre}</h4>
+                        <p className="mt-1 text-xs text-slate-300">
+                          {auto.anio_vehiculo_real || 'Año no registrado'} · {auto.pais_origen || 'País no registrado'} · {auto.categoria}
+                        </p>
+                        <p className="mt-3 max-h-28 overflow-y-auto text-sm leading-relaxed text-slate-300">
+                          {auto.historia_resumen || 'Sin descripción disponible.'}
+                        </p>
+                        {auto.datos_curiosos && (
+                          <div className="mt-3 border-l-2 border-red-500 pl-3 text-xs leading-relaxed text-slate-300">
+                            <strong className="mb-1 block text-red-400">Dato curioso</strong>
+                            {auto.datos_curiosos}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setDetalleAutoAbierto(detallesAbiertos ? null : auto.id)}
+                        aria-label={detallesAbiertos ? `Cerrar detalles de ${auto.modelo_nombre}` : `Ver detalles de ${auto.modelo_nombre}`}
+                        aria-pressed={detallesAbiertos}
+                        className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-slate-950/90 px-3 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                      >
+                        {detallesAbiertos ? <X className="h-3.5 w-3.5" /> : <Info className="h-3.5 w-3.5" />}
+                        {detallesAbiertos ? 'Cerrar ficha' : 'Ver ficha'}
+                      </button>
                     </div>
 
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">
-                        {auto.origen_franquicia}
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-2xl font-bold leading-tight text-white">{auto.modelo_nombre}</h3>
+                        <p className="mt-2 text-xs font-medium text-slate-400">
+                          {auto.anio_vehiculo_real || 'Año no registrado'} <span className="px-1 text-red-400">·</span> {auto.pais_origen || 'País no registrado'}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-[10px] font-bold text-slate-300">
+                        {variantesDelAuto.length} {variantesDelAuto.length === 1 ? 'variante' : 'variantes'}
                       </span>
-                      
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1.5">
-                        <Layers className="w-3.5 h-3.5 text-red-400" />
-                        {variantesDelAuto.length} {variantesDelAuto.length === 1 ? 'Variante' : 'Variantes'}
-                      </span>
                     </div>
 
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{auto.modelo_nombre}</h3>
-                      <p className="text-xs text-slate-400">Año Real: {auto.anio_vehiculo_real || 'N/A'} · {auto.pais_origen}</p>
-                    </div>
-
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {auto.historia_resumen}
+                    <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-300">
+                      {auto.historia_resumen || 'Sin descripción disponible.'}
                     </p>
 
-                    {auto.datos_curiosos && (
-                      <div className="bg-slate-950/80 border border-slate-800/80 p-3 rounded-xl text-[11px] text-slate-400">
-                        <strong className="text-red-400 block mb-0.5">Dato Curioso:</strong>
-                        {auto.datos_curiosos}
-                      </div>
-                    )}
-
                     {variantesDelAuto.length > 0 && (
-                      <div className="mt-4 pt-3 border-t border-slate-800 space-y-2">
-                        <p className="text-[11px] font-bold text-red-400 uppercase tracking-wider">Mis Variantes Guardadas:</p>
+                      <div className="mt-5 border-t border-slate-800 pt-4">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Mis variantes guardadas</p>
                         <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
                           {variantesDelAuto.map((v) => (
-                            <div key={v.id} className="bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs">
-                              <div className="flex items-center gap-2.5">
+                            <div key={v.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950 p-2.5 text-xs">
+                              <div className="flex min-w-0 items-center gap-2.5">
                                 {v.foto_mi_pieza_url ? (
-                                  <img src={v.foto_mi_pieza_url} alt="Mi Pieza" className="w-10 h-10 object-cover rounded-lg border border-slate-800 shrink-0" />
+                                  <img src={v.foto_mi_pieza_url} alt="Mi pieza" className="h-10 w-10 shrink-0 rounded-md border border-slate-800 object-cover" />
                                 ) : (
-                                  <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-slate-600 shrink-0">🚗</div>
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-900 text-slate-600"><Car className="h-4 w-4" /></div>
                                 )}
-                                <div>
-                                  <p className="font-bold text-white">{v.fabricante_diecast} <span className="text-slate-400 font-normal">({v.escala})</span></p>
-                                  <p className="text-[10px] text-slate-400">{v.estado_empaque} · <span className="text-emerald-400 font-semibold">${v.precio_pagado_cop?.toLocaleString()} COP</span></p>
+                                <div className="min-w-0">
+                                  <p className="truncate font-bold text-white">{v.fabricante_diecast} <span className="font-normal text-slate-400">({v.escala})</span></p>
+                                  <p className="mt-0.5 text-[10px] text-slate-400">{v.estado_empaque} · <span className="font-semibold text-emerald-400">${v.precio_pagado_cop?.toLocaleString('es-CO')} COP</span></p>
                                 </div>
                               </div>
                               {session && (
-                                <div className="flex items-center gap-1 shrink-0">
+                                <div className="flex shrink-0 items-center gap-1">
                                   <button
                                     onClick={() => handleOpenModal(auto, v)}
-                                    className="p-1.5 bg-slate-800 hover:bg-amber-600 text-slate-300 hover:text-white rounded-lg transition"
+                                    className="rounded-md bg-slate-800 p-1.5 text-slate-300 transition hover:bg-amber-600 hover:text-white"
                                     title="Editar esta variante"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
                                   <button
                                     onClick={() => eliminarVariante(v.id)}
-                                    className="p-1.5 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg transition"
+                                    className="rounded-md bg-slate-800 p-1.5 text-slate-300 transition hover:bg-rose-600 hover:text-white"
                                     title="Eliminar variante"
                                   >
-                                    ✕
+                                    <X className="h-3.5 w-3.5" />
                                   </button>
                                 </div>
                               )}
@@ -532,19 +558,19 @@ export default function CatalogoAutos() {
                     )}
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-slate-800">
+                  <div className="mt-auto border-t border-slate-800 px-5 pb-5 pt-4">
                     {session ? (
                       <button
                         onClick={() => handleOpenModal(auto)}
-                        className="w-full py-2.5 text-xs font-semibold rounded-xl bg-red-600 hover:bg-red-500 text-white transition flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/20"
+                        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-slate-900"
                       >
                         <Plus className="w-4 h-4" />
-                        Añadir Nueva Variante / Escala / Proveedor
+                        {variantesDelAuto.length > 0 ? 'Añadir otra variante' : 'Añadir variante'}
                       </button>
                     ) : (
                       <Link
                         href="/inventarioescuela/login?next=/autos"
-                        className="w-full py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-400 text-xs font-medium rounded-xl transition flex items-center justify-center gap-2"
+                        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-700 bg-slate-950 px-4 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800"
                       >
                         <Lock className="w-3.5 h-3.5 text-amber-500" />
                         Inicia sesión para gestionar tu vitrina
