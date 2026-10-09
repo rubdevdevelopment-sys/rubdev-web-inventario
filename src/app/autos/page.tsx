@@ -85,6 +85,7 @@ export default function CatalogoAutos() {
       setAccessChecked(false);
       if (!nextSession?.user.id) {
         setSession(null);
+        setMisAutos([]);
         setAccessChecked(true);
         return;
       }
@@ -95,13 +96,17 @@ export default function CatalogoAutos() {
         if (role !== 'admin') {
           await supabase.auth.signOut();
           setSession(null);
+          setMisAutos([]);
         } else {
           setSession(nextSession);
         }
       } catch (error) {
         console.error('No se pudo verificar el acceso a Autos:', error);
         await supabase.auth.signOut();
-        if (active) setSession(null);
+        if (active) {
+          setSession(null);
+          setMisAutos([]);
+        }
       } finally {
         if (active) setAccessChecked(true);
       }
@@ -118,7 +123,7 @@ export default function CatalogoAutos() {
     };
   }, []);
 
-  // Cargar datos del catálogo y colección
+  // El catálogo es público; los datos de la colección solo se consultan para el administrador.
   async function fetchData() {
     setLoading(true);
 
@@ -130,14 +135,18 @@ export default function CatalogoAutos() {
 
       if (catError) console.error("Error Catálogo:", catError);
 
-      const { data: miData, error: miError } = await supabase
-        .from('autos_mi_coleccion')
-        .select('*');
-
-      if (miError) console.error("Error Mi Colección:", miError);
-
       if (catData) setCatalogo(catData);
-      if (miData) setMisAutos(miData);
+
+      if (session) {
+        const { data: miData, error: miError } = await supabase
+          .from('autos_mi_coleccion')
+          .select('*');
+
+        if (miError) console.error("Error Mi Colección:", miError);
+        if (miData) setMisAutos(miData);
+      } else {
+        setMisAutos([]);
+      }
     } catch (err) {
       console.error("Error inesperado:", err);
     } finally {
@@ -150,7 +159,11 @@ export default function CatalogoAutos() {
   }, []);
 
   useEffect(() => {
-    if (session) fetchData();
+    if (session) {
+      fetchData();
+    } else {
+      setMisAutos([]);
+    }
   }, [session]);
 
   // Abrir modal para NUEVA variante o EDICIÓN
