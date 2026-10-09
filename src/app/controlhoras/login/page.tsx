@@ -3,12 +3,16 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
+import { getApplicationRole } from '@/lib/applicationAccess';
 import { Mail, KeyRound, ShieldAlert } from 'lucide-react';
 
 function FormularioLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextParam = searchParams.get('next') || '/controlhoras';
+  const requestedNext = searchParams.get('next');
+  const nextParam = requestedNext?.startsWith('/controlhoras') && !requestedNext.startsWith('//')
+    ? requestedNext
+    : '/controlhoras';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,11 +20,24 @@ function FormularioLoginContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.push(nextParam);
+    let active = true;
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      try {
+        const role = await getApplicationRole(supabase, 'controlhoras', session.user.id);
+        if (active && role) router.replace(nextParam);
+        else if (active) await supabase.auth.signOut();
+      } catch (error) {
+        console.error('No se pudo verificar el acceso a Control Horas:', error);
+        if (active) setErrorMessage('No se pudo verificar el permiso de Control Horas.');
       }
-    });
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [router, nextParam]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -41,8 +58,22 @@ function FormularioLoginContent() {
       );
       setLoading(false);
     } else if (data.session) {
-      router.push(nextParam);
-      router.refresh();
+      try {
+        const role = await getApplicationRole(supabase, 'controlhoras', data.session.user.id);
+        if (!role) {
+          await supabase.auth.signOut();
+          setErrorMessage('Esta cuenta no está autorizada para Control Horas.');
+          setLoading(false);
+          return;
+        }
+        router.replace(nextParam);
+        router.refresh();
+      } catch (error) {
+        await supabase.auth.signOut();
+        const message = error instanceof Error ? error.message : 'Error desconocido.';
+        setErrorMessage(`No se pudo verificar el permiso de Control Horas: ${message}`);
+        setLoading(false);
+      }
     }
   };
 

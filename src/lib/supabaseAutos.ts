@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAnonKey, supabaseUrl } from '@/lib/supabaseConfig';
 
-export const supabase = createClient(supabaseUrl.trim(), supabaseAnonKey.trim(), {
+export const supabaseAutos = createClient(supabaseUrl.trim(), supabaseAnonKey.trim(), {
   auth: {
-    storageKey: 'rubdev-inventario-auth',
+    storageKey: 'rubdev-autos-auth',
     persistSession: true,
     autoRefreshToken: true,
   },

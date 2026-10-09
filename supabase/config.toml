@@ -1,0 +1,7 @@
+project_id = "rubdev-web-inventario"
+
+[functions.create-control-horas-user]
+verify_jwt = true
+
+[functions.set-control-horas-password]
+verify_jwt = true

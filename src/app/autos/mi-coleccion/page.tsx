@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import { getApplicationRole } from '@/lib/applicationAccess';
+import { supabaseAutos as supabase } from '@/lib/supabaseAutos';
 import {
   ArrowLeft, RefreshCw, DollarSign,
   Package, Camera, Award, Info, X
@@ -36,12 +38,43 @@ interface MiColeccionItem {
 }
 
 export default function MiVitrinaColeccion() {
+  const router = useRouter();
   const [items, setItems] = useState<MiColeccionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [detalleItemAbierto, setDetalleItemAbierto] = useState<string | null>(null);
 
+  useEffect(() => {
+    let active = true;
+
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user.id) {
+        router.replace('/autos/login?next=/autos/mi-coleccion');
+        return;
+      }
+
+      try {
+        const role = await getApplicationRole(supabase, 'autos', session.user.id);
+        if (!active) return;
+        if (role !== 'admin') {
+          await supabase.auth.signOut();
+          router.replace('/autos/login?next=/autos/mi-coleccion');
+          return;
+        }
+        await fetchVitrina();
+      } catch (error) {
+        console.error('No se pudo verificar el acceso a la colección de Autos:', error);
+        if (active) router.replace('/autos/login?next=/autos/mi-coleccion');
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
   // Cargar elementos de la vitrina con join completo al catálogo maestro
-  const fetchVitrina = async () => {
+  async function fetchVitrina() {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -63,11 +96,7 @@ export default function MiVitrinaColeccion() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchVitrina();
-  }, []);
+  }
 
   // Métricas Calculadas
   const totalInversion = items.reduce((sum, item) => sum + (item.precio_pagado_cop || 0), 0);

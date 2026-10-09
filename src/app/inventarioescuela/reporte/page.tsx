@@ -2,37 +2,69 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { getApplicationRole } from '@/lib/applicationAccess';
 import * as XLSX from 'xlsx';
 import {
     ArrowLeft, Search, Printer, FileSpreadsheet
 } from 'lucide-react';
 
 export default function ReportePorResponsable() {
+    const router = useRouter();
     const [funcionarios, setFuncionarios] = useState<any[]>([]);
     const [selectedFuncionarioId, setSelectedFuncionarioId] = useState('');
     const [funcionarioActual, setFuncionarioActual] = useState<any>(null);
     const [activosResponsable, setActivosResponsable] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchFunc, setSearchFunc] = useState('');
+    const [accessChecked, setAccessChecked] = useState(false);
 
     useEffect(() => {
-        const fetchFuncionarios = async () => {
-            const { data } = await supabase
-                .from('funcionarios')
-                .select('id, nombre_completo, cedula, dependencia')
-                .order('nombre_completo', { ascending: true });
+        let active = true;
 
-            if (data && data.length > 0) {
-                const funcsUnicos = data.filter((f, index, self) =>
-                    index === self.findIndex((t) => t.nombre_completo === f.nombre_completo)
-                );
-                setFuncionarios(funcsUnicos);
-                setSelectedFuncionarioId(funcsUnicos[0].id);
+        void (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                setAccessChecked(true);
+                router.replace('/inventarioescuela/login?next=/inventarioescuela/reporte');
+                return;
             }
+
+            try {
+                const role = await getApplicationRole(supabase, 'inventarioescuela', session.user.id);
+                if (role !== 'admin') {
+                    await supabase.auth.signOut();
+                    setAccessChecked(true);
+                    router.replace('/inventarioescuela/login?next=/inventarioescuela/reporte');
+                    return;
+                }
+
+                const { data, error } = await supabase
+                    .from('funcionarios')
+                    .select('id, nombre_completo, cedula, dependencia')
+                    .order('nombre_completo', { ascending: true });
+                if (error) throw error;
+
+                if (active && data?.length) {
+                    const funcsUnicos = data.filter((f, index, self) =>
+                        index === self.findIndex((t) => t.nombre_completo === f.nombre_completo)
+                    );
+                    setFuncionarios(funcsUnicos);
+                    setSelectedFuncionarioId(funcsUnicos[0].id);
+                }
+            } catch (error) {
+                console.error('No se pudo verificar el acceso al reporte de Inventarios:', error);
+                if (active) router.replace('/inventarioescuela/login?next=/inventarioescuela/reporte');
+            } finally {
+                if (active) setAccessChecked(true);
+            }
+        })();
+
+        return () => {
+            active = false;
         };
-        fetchFuncionarios();
-    }, []);
+    }, [router]);
 
     useEffect(() => {
         if (!selectedFuncionarioId) return;
@@ -97,6 +129,14 @@ export default function ReportePorResponsable() {
     const valorTotal = activosResponsable.reduce((acc, item) => acc + (item.valor || 0), 0);
     const enServicio = activosResponsable.filter(a => a.estado_activo === 'EN_SERVICIO').length;
     const devoluciones = activosResponsable.filter(a => a.estado_activo === 'DEVOLUCION').length;
+
+    if (!accessChecked) {
+        return (
+            <main className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-400">
+                Verificando permisos de Inventarios...
+            </main>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col print:bg-white print:text-black">

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { getApplicationRole } from '@/lib/applicationAccess';
+import { supabaseAutos as supabase } from '@/lib/supabaseAutos';
 import { 
   Car, Search, Plus, ArrowLeft, 
   BookmarkCheck, Lock, LogOut, RefreshCw, Upload, Edit3, Camera, Sparkles, Info, X
@@ -40,6 +41,7 @@ export default function CatalogoAutos() {
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('TODOS');
   const [session, setSession] = useState<any>(null);
+  const [accessChecked, setAccessChecked] = useState(false);
   const [detalleAutoAbierto, setDetalleAutoAbierto] = useState<string | null>(null);
 
   // Modal para agregar/editar variante en la colección
@@ -74,21 +76,50 @@ export default function CatalogoAutos() {
   const [previewRefMaestro, setPreviewRefMaestro] = useState<string | null>(null);
   const [savingMaestro, setSavingMaestro] = useState(false);
 
-  // Verificar sesión activa en Supabase Auth
+  // A session is not an Autos permission; require an explicit application role.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    let active = true;
+
+    const verifyAccess = async (nextSession: typeof session) => {
+      if (!active) return;
+      setAccessChecked(false);
+      if (!nextSession?.user.id) {
+        setSession(null);
+        setAccessChecked(true);
+        return;
+      }
+
+      try {
+        const role = await getApplicationRole(supabase, 'autos', nextSession.user.id);
+        if (!active) return;
+        if (role !== 'admin') {
+          await supabase.auth.signOut();
+          setSession(null);
+        } else {
+          setSession(nextSession);
+        }
+      } catch (error) {
+        console.error('No se pudo verificar el acceso a Autos:', error);
+        await supabase.auth.signOut();
+        if (active) setSession(null);
+      } finally {
+        if (active) setAccessChecked(true);
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => verifyAccess(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void verifyAccess(nextSession);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Cargar datos del catálogo y colección
-  const fetchData = async () => {
+  async function fetchData() {
     setLoading(true);
 
     try {
@@ -112,11 +143,15 @@ export default function CatalogoAutos() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (session) fetchData();
+  }, [session]);
 
   // Abrir modal para NUEVA variante o EDICIÓN
   const handleOpenModal = (auto: AutoCatalogo, varianteExistente?: MiColeccion) => {
@@ -336,9 +371,11 @@ export default function CatalogoAutos() {
             </button>
           )}
 
-          {!session ? (
+          {!accessChecked ? (
+            <span className="px-3.5 py-2 text-xs text-slate-500">Verificando acceso...</span>
+          ) : !session ? (
             <Link
-              href="/inventarioescuela/login?next=/autos"
+              href="/autos/login?next=/autos"
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition"
             >
               <Lock className="w-3.5 h-3.5" />
@@ -559,7 +596,9 @@ export default function CatalogoAutos() {
                   </div>
 
                   <div className="mt-auto border-t border-slate-800 px-5 pb-5 pt-4">
-                    {session ? (
+                    {!accessChecked ? (
+                      <div className="py-3 text-center text-xs text-slate-500">Verificando permisos...</div>
+                    ) : session ? (
                       <button
                         onClick={() => handleOpenModal(auto)}
                         className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-slate-900"
@@ -569,7 +608,7 @@ export default function CatalogoAutos() {
                       </button>
                     ) : (
                       <Link
-                        href="/inventarioescuela/login?next=/autos"
+                        href="/autos/login?next=/autos"
                         className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-700 bg-slate-950 px-4 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800"
                       >
                         <Lock className="w-3.5 h-3.5 text-amber-500" />

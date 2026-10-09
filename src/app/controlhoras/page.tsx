@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
+import { getApplicationRole } from '@/lib/applicationAccess';
 import {
   Clock, Calendar, Plus, Edit2,
   ShieldCheck, LogOut, FileSpreadsheet, TrendingUp
@@ -12,6 +13,7 @@ import {
 export default function ControlHorasDashboard() {
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
+  const [accessChecked, setAccessChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState<any>(null);
   const [registros, setRegistros] = useState<any[]>([]);
@@ -27,29 +29,53 @@ export default function ControlHorasDashboard() {
   const [descripcion, setDescripcion] = useState('');
 
   useEffect(() => {
-    // Protección de Ruta: Verificar si está logueado
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user.email) {
-        router.push('/controlhoras/login?next=/controlhoras');
-      } else {
-        setSession(session);
-        cargarDatos(session.user.email);
+    let active = true;
+
+    const verifyAccess = async (nextSession: typeof session) => {
+      if (!active) return;
+      setAccessChecked(false);
+      if (!nextSession?.user.email) {
+        setSession(null);
+        setAccessChecked(true);
+        router.replace('/controlhoras/login?next=/controlhoras');
+        return;
       }
+
+      try {
+        const role = await getApplicationRole(supabase, 'controlhoras', nextSession.user.id);
+        if (!active) return;
+        if (!role) {
+          await supabase.auth.signOut();
+          setSession(null);
+          router.replace('/controlhoras/login?next=/controlhoras');
+          return;
+        }
+        setSession(nextSession);
+        await cargarDatos(nextSession.user.email);
+      } catch (error) {
+        console.error('No se pudo verificar el acceso a Control Horas:', error);
+        await supabase.auth.signOut();
+        if (active) {
+          setSession(null);
+          router.replace('/controlhoras/login?next=/controlhoras');
+        }
+      } finally {
+        if (active) setAccessChecked(true);
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => verifyAccess(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void verifyAccess(nextSession);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user.email) {
-        router.push('/controlhoras/login?next=/controlhoras');
-      } else {
-        setSession(session);
-        cargarDatos(session.user.email);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, [router]);
 
-  const cargarDatos = async (email: string) => {
+  async function cargarDatos(email: string) {
     setLoading(true);
     try {
       let { data: metaData } = await supabase
@@ -66,7 +92,7 @@ export default function ControlHorasDashboard() {
           horas_totales_requeridas: 40,
           fecha_inicio_periodo: '2026-10-01',
           es_admin: email === 'rmonroyl@cendoj.ramajudicial.gov.co'
-        };
+        }
       }
       setMeta(metaData);
 
@@ -173,6 +199,14 @@ export default function ControlHorasDashboard() {
   };
 
   if (loading) {
+    if (!accessChecked || !session) {
+      return (
+        <main className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-400">
+          Verificando permisos de Control Horas...
+        </main>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center font-sans">
         <p className="text-xs text-slate-400 animate-pulse">Verificando sesión y cargando datos...</p>

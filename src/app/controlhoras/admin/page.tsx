@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
+import { getApplicationRole } from '@/lib/applicationAccess';
 import { 
-  ShieldCheck, ArrowLeft, Users, Plus, Edit2, KeyRound, RefreshCw, Lock
+  ShieldCheck, ArrowLeft, Users, Plus, Edit2, KeyRound, RefreshCw, Lock, UserPlus
 } from 'lucide-react';
 
 export default function AdminControlHoras() {
+  const router = useRouter();
   const [metas, setMetas] = useState<any[]>([]);
   const [registros, setRegistros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,9 +31,11 @@ export default function AdminControlHoras() {
   const [nuevaPass, setNuevaPass] = useState('');
   const [passLoading, setPassLoading] = useState(false);
 
-  useEffect(() => {
-    cargarDatosAdmin();
-  }, []);
+  // Formulario para crear una cuenta en Supabase Auth
+  const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+  const [targetEmailAccount, setTargetEmailAccount] = useState('');
+  const [newAccountPassword, setNewAccountPassword] = useState('');
+  const [accountLoading, setAccountLoading] = useState(false);
 
   const cargarDatosAdmin = async () => {
     setLoading(true);
@@ -53,6 +58,34 @@ export default function AdminControlHoras() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/controlhoras/login?next=/controlhoras/admin');
+        return;
+      }
+
+      try {
+        const role = await getApplicationRole(supabase, 'controlhoras', session.user.id);
+        if (!active) return;
+        if (role !== 'admin') {
+          router.replace('/controlhoras');
+          return;
+        }
+        await cargarDatosAdmin();
+      } catch (error) {
+        console.error('No se pudo verificar el acceso de administrador de Control Horas:', error);
+        if (active) router.replace('/controlhoras');
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   const guardarConfiguracion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,22 +116,65 @@ export default function AdminControlHoras() {
     setPassLoading(true);
 
     try {
-      const { error } = await supabase.rpc('admin_cambiar_password_funcionario', {
-        target_email: targetEmailPass,
-        new_password: nuevaPass
+      const { error } = await supabase.functions.invoke('set-control-horas-password', {
+        body: {
+          email: targetEmailPass.trim().toLowerCase(),
+          password: nuevaPass,
+        },
       });
 
-      if (!error) {
-        alert(`Contraseña actualizada con éxito para ${targetEmailPass}`);
-        setIsPasswordModalOpen(false);
-        setNuevaPass('');
-      } else {
-        alert('Error cambiando contraseña: ' + error.message);
+      if (error) {
+        let message = error.message;
+        if (error.context instanceof Response) {
+          const responseBody = await error.context.json().catch(() => null);
+          if (typeof responseBody?.error === 'string') message = responseBody.error;
+        }
+        alert('Error cambiando contraseña: ' + message);
+        return;
       }
+
+      alert(`Contraseña actualizada para ${targetEmailPass}.`);
+      setIsPasswordModalOpen(false);
+      setNuevaPass('');
     } catch (err: any) {
       alert('Error de ejecución: ' + err.message);
     } finally {
       setPassLoading(false);
+    }
+  };
+
+  const crearCuentaAcceso = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccountLoading(true);
+
+    try {
+      const { error } = await supabase.functions.invoke('create-control-horas-user', {
+        body: {
+          email: targetEmailAccount.trim().toLowerCase(),
+          password: newAccountPassword,
+        },
+      });
+
+      if (error) {
+        let message = error.message;
+        if (error.context instanceof Response) {
+          const responseBody = await error.context.json().catch(() => null);
+          if (typeof responseBody?.error === 'string') {
+            message = responseBody.error;
+          }
+        }
+        alert(`No se pudo crear la cuenta: ${message}`);
+        return;
+      }
+
+      alert(`Cuenta de acceso creada para ${targetEmailAccount}.`);
+      setIsCreateAccountOpen(false);
+      setNewAccountPassword('');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error de ejecución desconocido.';
+      alert(`No se pudo crear la cuenta: ${message}`);
+    } finally {
+      setAccountLoading(false);
     }
   };
 
@@ -196,6 +272,17 @@ export default function AdminControlHoras() {
                       <td className="px-6 py-4 text-right flex justify-end gap-2">
                         <button
                           onClick={() => {
+                            setTargetEmailAccount(m.funcionario_email);
+                            setNewAccountPassword('');
+                            setIsCreateAccountOpen(true);
+                          }}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-lg transition"
+                          title="Crear Cuenta de Acceso"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
                             setTargetEmailPass(m.funcionario_email);
                             setIsPasswordModalOpen(true);
                           }}
@@ -233,6 +320,10 @@ export default function AdminControlHoras() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <h3 className="text-base font-bold text-white">Configurar Funcionario</h3>
+            <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+              Esto solo registra los datos y metas del funcionario; no crea una cuenta para iniciar sesión.
+              La cuenta debe crearse en Supabase, en Authentication &gt; Users.
+            </p>
 
             <form onSubmit={guardarConfiguracion} className="space-y-3 text-xs">
               <div>
@@ -321,6 +412,10 @@ export default function AdminControlHoras() {
             <p className="text-xs text-slate-400">
               Servidor: <strong className="text-amber-400">{targetEmailPass}</strong>
             </p>
+            <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+              Solo cambia la contraseña de cuentas autorizadas para Control Horas.
+              Usa una contraseña temporal única de al menos 12 caracteres.
+            </p>
 
             <form onSubmit={cambiarPassword} className="space-y-3 text-xs">
               <div>
@@ -329,7 +424,8 @@ export default function AdminControlHoras() {
                   type="password"
                   value={nuevaPass}
                   onChange={(e) => setNuevaPass(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
+                  minLength={12}
+                  autoComplete="new-password"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200"
                   required
                 />
@@ -349,6 +445,55 @@ export default function AdminControlHoras() {
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl"
                 >
                   {passLoading ? 'Actualizando...' : 'Actualizar Clave'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isCreateAccountOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-emerald-400" /> Crear Cuenta de Acceso
+            </h3>
+            <p className="text-xs text-slate-400">
+              Funcionario: <strong className="text-emerald-400">{targetEmailAccount}</strong>
+            </p>
+            <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+              La cuenta se creará en Supabase Auth y el correo quedará confirmado para iniciar sesión.
+              Usa una contraseña temporal única de al menos 12 caracteres y compártela por un canal seguro.
+            </p>
+
+            <form onSubmit={crearCuentaAcceso} className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-400 mb-1 block">Contraseña temporal</label>
+                <input
+                  type="password"
+                  value={newAccountPassword}
+                  onChange={(e) => setNewAccountPassword(e.target.value)}
+                  autoComplete="new-password"
+                  minLength={12}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateAccountOpen(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={accountLoading}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl disabled:opacity-50"
+                >
+                  {accountLoading ? 'Creando...' : 'Crear Cuenta'}
                 </button>
               </div>
             </form>

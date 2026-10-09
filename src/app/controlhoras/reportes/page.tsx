@@ -2,16 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import { getApplicationRole } from '@/lib/applicationAccess';
+import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
 import * as XLSX from 'xlsx';
 import {
   ArrowLeft, FileSpreadsheet, Printer, Search, Calendar
 } from 'lucide-react';
 
 export default function ReportesControlHoras() {
+  const router = useRouter();
   const [registros, setRegistros] = useState<any[]>([]);
   const [metas, setMetas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accessChecked, setAccessChecked] = useState(false);
 
   // Filtros
   const [fechaDesde, setFechaDesde] = useState('');
@@ -19,10 +23,39 @@ export default function ReportesControlHoras() {
   const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
-    cargarReporte();
-  }, []);
+    let active = true;
 
-  const cargarReporte = async () => {
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setAccessChecked(true);
+        router.replace('/controlhoras/login?next=/controlhoras/reportes');
+        return;
+      }
+
+      try {
+        const role = await getApplicationRole(supabase, 'controlhoras', session.user.id);
+        if (!role) {
+          await supabase.auth.signOut();
+          setAccessChecked(true);
+          router.replace('/controlhoras/login?next=/controlhoras/reportes');
+          return;
+        }
+        await cargarReporte();
+      } catch (error) {
+        console.error('No se pudo verificar el acceso a los reportes de Control Horas:', error);
+        if (active) router.replace('/controlhoras/login?next=/controlhoras/reportes');
+      } finally {
+        if (active) setAccessChecked(true);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  async function cargarReporte() {
     setLoading(true);
     const { data: metasData } = await supabase.from('control_horas_metas').select('*').eq('periodo_anio', 2026);
     if (metasData) setMetas(metasData);
@@ -31,7 +64,7 @@ export default function ReportesControlHoras() {
     if (regData) setRegistros(regData);
 
     setLoading(false);
-  };
+  }
 
   const registrosFiltrados = registros.filter((reg) => {
     const coincideBusqueda = reg.funcionario_email.toLowerCase().includes(busqueda.toLowerCase()) ||

@@ -4,12 +4,16 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { getApplicationRole } from '@/lib/applicationAccess';
 import { Lock, ArrowLeft, KeyRound, Mail, ShieldAlert } from 'lucide-react';
 
 function FormularioLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextParam = searchParams.get('next') || '/inventarioescuela';
+  const requestedNext = searchParams.get('next');
+  const nextParam = requestedNext?.startsWith('/inventarioescuela') && !requestedNext.startsWith('//')
+    ? requestedNext
+    : '/inventarioescuela';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,11 +21,25 @@ function FormularioLoginContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.push(nextParam);
+    let active = true;
+
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      try {
+        const role = await getApplicationRole(supabase, 'inventarioescuela', session.user.id);
+        if (active && role === 'admin') router.replace(nextParam);
+        else if (active) await supabase.auth.signOut();
+      } catch (error) {
+        console.error('No se pudo verificar el acceso a Inventarios:', error);
+        if (active) setErrorMessage('No se pudo verificar el permiso de Inventarios.');
       }
-    });
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [router, nextParam]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -30,7 +48,7 @@ function FormularioLoginContent() {
     setErrorMessage(null);
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
 
@@ -42,7 +60,21 @@ function FormularioLoginContent() {
       );
       setLoading(false);
     } else if (data.session) {
-      router.push(nextParam);
+      try {
+        const role = await getApplicationRole(supabase, 'inventarioescuela', data.session.user.id);
+        if (role !== 'admin') {
+          await supabase.auth.signOut();
+          setErrorMessage('Esta cuenta no está autorizada para administrar Inventarios.');
+          setLoading(false);
+          return;
+        }
+        router.replace(nextParam);
+      } catch (error) {
+        await supabase.auth.signOut();
+        const message = error instanceof Error ? error.message : 'Error desconocido.';
+        setErrorMessage(`No se pudo verificar el permiso de Inventarios: ${message}`);
+        setLoading(false);
+      }
     }
   };
 

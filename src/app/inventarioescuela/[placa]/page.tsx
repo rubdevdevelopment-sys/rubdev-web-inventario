@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { getApplicationRole } from '@/lib/applicationAccess';
 import { QRCodeSVG } from 'qrcode.react';
 import {
     ArrowLeft, Printer, ShieldCheck, Building, User,
@@ -12,9 +13,11 @@ import {
 
 export default function HojaDeVidaActivo() {
     const params = useParams();
+    const router = useRouter();
     const placa = decodeURIComponent(params.placa as string);
 
     const [session, setSession] = useState<any>(null);
+    const [accessChecked, setAccessChecked] = useState(false);
     const [activo, setActivo] = useState<any>(null);
     const [funcionarios, setFuncionarios] = useState<any[]>([]);
     const [movimientos, setMovimientos] = useState<any[]>([]);
@@ -30,16 +33,51 @@ export default function HojaDeVidaActivo() {
     const [observaciones, setObservaciones] = useState('');
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
+        let active = true;
+
+        const verifyAccess = async (nextSession: typeof session) => {
+            if (!active) return;
+            setAccessChecked(false);
+            if (!nextSession?.user.id) {
+                setSession(null);
+                setAccessChecked(true);
+                return;
+            }
+
+            try {
+                const role = await getApplicationRole(supabase, 'inventarioescuela', nextSession.user.id);
+                if (!active) return;
+                if (role !== 'admin') {
+                    await supabase.auth.signOut();
+                    setSession(null);
+                    return;
+                }
+                setSession(nextSession);
+            } catch (error) {
+                console.error('No se pudo verificar el acceso a Inventarios:', error);
+                await supabase.auth.signOut();
+                if (active) setSession(null);
+            } finally {
+                if (active) setAccessChecked(true);
+            }
+        };
+
+        supabase.auth.getSession().then(({ data: { session } }) => verifyAccess(session));
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+            void verifyAccess(nextSession);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
-
-        return () => subscription.unsubscribe();
+        return () => {
+            active = false;
+            subscription.unsubscribe();
+        };
     }, []);
+
+    useEffect(() => {
+        if (accessChecked && !session) {
+            router.replace(`/inventarioescuela/login?next=/inventarioescuela/${encodeURIComponent(placa)}`);
+        }
+    }, [accessChecked, placa, router, session]);
 
     const fetchDetalle = async () => {
         setLoading(true);
@@ -89,8 +127,8 @@ export default function HojaDeVidaActivo() {
     };
 
     useEffect(() => {
-        if (placa) fetchDetalle();
-    }, [placa]);
+        if (placa && session) fetchDetalle();
+    }, [placa, session]);
 
     const handleGuardarMovimiento = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -132,6 +170,14 @@ export default function HojaDeVidaActivo() {
     }
 
     const qrUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+    if (!accessChecked || !session) {
+        return (
+            <main className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-400">
+                Verificando permisos de Inventarios...
+            </main>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col print:bg-white print:text-black">

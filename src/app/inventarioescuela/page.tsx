@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { getApplicationRole } from '@/lib/applicationAccess';
 import {
     Search, ShieldCheck, Wrench, Package,
     ArrowLeft, QrCode, RefreshCw, Undo2, Plus, X,
@@ -27,7 +29,9 @@ interface Activo {
 }
 
 export default function InventarioDashboard() {
+    const router = useRouter();
     const [session, setSession] = useState<any>(null);
+    const [accessChecked, setAccessChecked] = useState(false);
     const [activos, setActivos] = useState<Activo[]>([]);
     const [categorias, setCategorias] = useState<any[]>([]);
     const [funcionarios, setFuncionarios] = useState<any[]>([]);
@@ -60,18 +64,53 @@ export default function InventarioDashboard() {
     const [newNumDoc, setNewNumDoc] = useState('');
     const [newTipoDoc, setNewTipoDoc] = useState('TC');
 
-    // Validar Estado de Sesión en Supabase
+    // A valid Supabase session alone does not grant Inventory access.
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
+        let active = true;
+
+        const verifyAccess = async (nextSession: typeof session) => {
+            if (!active) return;
+            setAccessChecked(false);
+            if (!nextSession?.user.id) {
+                setSession(null);
+                setAccessChecked(true);
+                return;
+            }
+
+            try {
+                const role = await getApplicationRole(supabase, 'inventarioescuela', nextSession.user.id);
+                if (!active) return;
+                if (role !== 'admin') {
+                    await supabase.auth.signOut();
+                    setSession(null);
+                    return;
+                }
+                setSession(nextSession);
+            } catch (error) {
+                console.error('No se pudo verificar el acceso a Inventarios:', error);
+                await supabase.auth.signOut();
+                if (active) setSession(null);
+            } finally {
+                if (active) setAccessChecked(true);
+            }
+        };
+
+        supabase.auth.getSession().then(({ data: { session } }) => verifyAccess(session));
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+            void verifyAccess(nextSession);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
-
-        return () => subscription.unsubscribe();
+        return () => {
+            active = false;
+            subscription.unsubscribe();
+        };
     }, []);
+
+    useEffect(() => {
+        if (accessChecked && !session) {
+            router.replace('/inventarioescuela/login?next=/inventarioescuela');
+        }
+    }, [accessChecked, router, session]);
 
     // Cargar datos por lotes acumulativos (Paginación de 1000)
     const fetchActivos = async () => {
@@ -134,9 +173,11 @@ export default function InventarioDashboard() {
     };
 
     useEffect(() => {
-        fetchActivos();
-        fetchAuxiliares();
-    }, []);
+        if (session) {
+            fetchActivos();
+            fetchAuxiliares();
+        }
+    }, [session]);
 
     const handleCrearServidor = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -266,6 +307,14 @@ export default function InventarioDashboard() {
     const procesosDevolucion = activos.filter(a => a.estado_activo === 'PROCESO_DEVOLUCION').length;
     const devoluciones = activos.filter(a => a.estado_activo === 'DEVOLUCION').length;
 
+
+    if (!accessChecked || !session) {
+        return (
+            <main className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-400">
+                Verificando permisos de Inventarios...
+            </main>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
