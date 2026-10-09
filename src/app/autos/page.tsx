@@ -34,9 +34,16 @@ interface MiColeccion {
   observaciones?: string | null;
 }
 
+interface ImagenColeccionPublica {
+  catalogo_id: string;
+  foto_auto_real_url: string | null;
+  foto_mi_pieza_url: string | null;
+}
+
 export default function CatalogoAutos() {
   const [catalogo, setCatalogo] = useState<AutoCatalogo[]>([]);
   const [misAutos, setMisAutos] = useState<MiColeccion[]>([]);
+  const [imagenesColeccionPublicas, setImagenesColeccionPublicas] = useState<ImagenColeccionPublica[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('TODOS');
@@ -136,6 +143,17 @@ export default function CatalogoAutos() {
       if (catError) console.error("Error Catálogo:", catError);
 
       if (catData) setCatalogo(catData);
+
+      const { data: imagenesPublicas, error: imagenesError } = await supabase
+        .from('autos_imagenes_publicas')
+        .select('catalogo_id, foto_auto_real_url, foto_mi_pieza_url');
+
+      if (imagenesError) {
+        console.error('Error al cargar imágenes públicas de Autos:', imagenesError);
+        setImagenesColeccionPublicas([]);
+      } else if (imagenesPublicas) {
+        setImagenesColeccionPublicas(imagenesPublicas);
+      }
 
       if (session) {
         const { data: miData, error: miError } = await supabase
@@ -470,10 +488,12 @@ export default function CatalogoAutos() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {catalogoFiltrado.map((auto) => {
               const variantesDelAuto = misAutos.filter((m) => m.catalogo_id === auto.id);
+              const imagenesDelAuto = session
+                ? variantesDelAuto
+                : imagenesColeccionPublicas.filter((imagen) => imagen.catalogo_id === auto.id);
 
-              // Buscamos de forma robusta en CUALQUIER variante si ya hay fotos subidas
-              const varianteConPieza = variantesDelAuto.find(v => v.foto_mi_pieza_url && v.foto_mi_pieza_url.trim() !== '');
-              const varianteConReal = variantesDelAuto.find(v => v.foto_auto_real_url && v.foto_auto_real_url.trim() !== '');
+              const varianteConPieza = imagenesDelAuto.find(v => v.foto_mi_pieza_url && v.foto_mi_pieza_url.trim() !== '');
+              const varianteConReal = imagenesDelAuto.find(v => v.foto_auto_real_url && v.foto_auto_real_url.trim() !== '');
 
               // JERARQUÍA ROBUSTA DE IMÁGENES:
               // 1. Foto de tu pieza real en colección (si ya la conseguiste)

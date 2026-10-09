@@ -45,6 +45,8 @@ Para Inventarios, aplica después `supabase/migrations/20261009110000_public_inv
 
 Para Autos, aplica `supabase/migrations/20261009120000_public_autos_catalog_and_images.sql` desde SQL Editor. Permite consultar el catálogo y leer imágenes del bucket `autos_galeria` sin iniciar sesión, mientras reserva los cambios de catálogo, la colección y las imágenes a `rmonroyl@cendoj.ramajudicial.gov.co`. El bucket completo se vuelve público; cualquier persona con una URL de imagen podrá verla. La colección y sus datos permanecen restringidos a ese administrador.
 
+Si las imágenes de Autos se guardan como variantes de la colección, aplica también `supabase/migrations/20261009130000_public_autos_image_gallery_view.sql`. Esta vista pública expone únicamente el identificador de catálogo y las URL de fotos para mostrarlas en las tarjetas; no expone precio, fabricante, escala, ni otros datos de colección.
+
 ## Funciones seguras de Control Horas
 
 Las Edge Functions crean cuentas y cambian contraseñas únicamente cuando las invoca un administrador asignado a Control Horas. La clave administrativa permanece en el entorno de Supabase y nunca en el navegador.
