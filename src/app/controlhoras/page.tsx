@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
 import {
   Clock, Calendar, Plus, Edit2,
-  Sparkles, ShieldCheck, LogOut, FileSpreadsheet, TrendingUp
+  ShieldCheck, LogOut, FileSpreadsheet, TrendingUp
 } from 'lucide-react';
 
 export default function ControlHorasDashboard() {
@@ -188,12 +188,12 @@ export default function ControlHorasDashboard() {
 
       <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+          <div className="p-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+            <img src="/icohoras.png" alt="" className="w-7 h-7" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-white flex items-center gap-2">
-              Control de Horas <span className="text-amber-400">Fin de Año</span>
+              Control Horas <span className="text-amber-400">Diciembre</span>
             </h1>
             <p className="text-xs text-slate-400">Compensación Institucional 2026</p>
           </div>

@@ -103,6 +103,38 @@ export default function Home() {
             </div>
           </Link>
 
+          {/* Módulo Control Horas Diciembre */}
+          <Link
+            href="/controlhoras"
+            className="group bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-amber-500/50 transition-all duration-300 shadow-xl hover:shadow-amber-500/10 flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="p-3.5 bg-amber-500/10 rounded-2xl border border-amber-500/20 group-hover:scale-105 transition-transform">
+                  <img src="/icohoras.png" alt="" className="w-8 h-8" />
+                </div>
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  En Servicio
+                </span>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-bold text-white group-hover:text-amber-400 transition-colors">
+                  Control Horas Diciembre
+                </h2>
+              </div>
+
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Registro y seguimiento de horas compensadas, metas institucionales y reportes.
+              </p>
+            </div>
+
+            <div className="mt-8 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-amber-400 group-hover:text-amber-300">
+              <span>Acceder al Módulo</span>
+              <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
         </div>
       </main>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseControlHoras as supabase } from '@/lib/supabaseControlHoras';
-import { Mail, KeyRound, ShieldAlert, Sparkles } from 'lucide-react';
+import { Mail, KeyRound, ShieldAlert } from 'lucide-react';
 
 function FormularioLoginContent() {
   const router = useRouter();
@@ -49,11 +49,11 @@ function FormularioLoginContent() {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
       <div className="text-center space-y-2">
-        <div className="inline-flex p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 mb-1">
-          <Sparkles className="w-8 h-8 animate-pulse" />
+        <div className="inline-flex p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20 mb-1">
+          <img src="/icohoras.png" alt="" className="w-8 h-8" />
         </div>
         <h2 className="text-2xl font-black text-white tracking-wide">
-          Control de Horas <span className="text-amber-400">Fin de Año</span>
+          Control Horas <span className="text-amber-400">Diciembre</span>
         </h2>
         <p className="text-xs text-slate-400">
           Acceso exclusivo para servidores registrados en la compensación de tiempo
