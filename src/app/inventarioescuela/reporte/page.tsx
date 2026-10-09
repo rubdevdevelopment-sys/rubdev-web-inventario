@@ -2,47 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { getApplicationRole } from '@/lib/applicationAccess';
 import * as XLSX from 'xlsx';
 import {
     ArrowLeft, Search, Printer, FileSpreadsheet
 } from 'lucide-react';
 
 export default function ReportePorResponsable() {
-    const router = useRouter();
     const [funcionarios, setFuncionarios] = useState<any[]>([]);
     const [selectedFuncionarioId, setSelectedFuncionarioId] = useState('');
     const [funcionarioActual, setFuncionarioActual] = useState<any>(null);
     const [activosResponsable, setActivosResponsable] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchFunc, setSearchFunc] = useState('');
-    const [accessChecked, setAccessChecked] = useState(false);
 
     useEffect(() => {
         let active = true;
 
         void (async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                setAccessChecked(true);
-                router.replace('/inventarioescuela/login?next=/inventarioescuela/reporte');
-                return;
-            }
-
             try {
-                const role = await getApplicationRole(supabase, 'inventarioescuela', session.user.id);
-                if (role !== 'admin') {
-                    await supabase.auth.signOut();
-                    setAccessChecked(true);
-                    router.replace('/inventarioescuela/login?next=/inventarioescuela/reporte');
-                    return;
-                }
-
                 const { data, error } = await supabase
-                    .from('funcionarios')
-                    .select('id, nombre_completo, cedula, dependencia')
+                    .from('funcionarios_publicos')
+                    .select('id, nombre_completo, dependencia')
                     .order('nombre_completo', { ascending: true });
                 if (error) throw error;
 
@@ -54,17 +35,14 @@ export default function ReportePorResponsable() {
                     setSelectedFuncionarioId(funcsUnicos[0].id);
                 }
             } catch (error) {
-                console.error('No se pudo verificar el acceso al reporte de Inventarios:', error);
-                if (active) router.replace('/inventarioescuela/login?next=/inventarioescuela/reporte');
-            } finally {
-                if (active) setAccessChecked(true);
+                console.error('No se pudo cargar el reporte público de Inventarios:', error);
             }
         })();
 
         return () => {
             active = false;
         };
-    }, [router]);
+    }, []);
 
     useEffect(() => {
         if (!selectedFuncionarioId) return;
@@ -129,14 +107,6 @@ export default function ReportePorResponsable() {
     const valorTotal = activosResponsable.reduce((acc, item) => acc + (item.valor || 0), 0);
     const enServicio = activosResponsable.filter(a => a.estado_activo === 'EN_SERVICIO').length;
     const devoluciones = activosResponsable.filter(a => a.estado_activo === 'DEVOLUCION').length;
-
-    if (!accessChecked) {
-        return (
-            <main className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-400">
-                Verificando permisos de Inventarios...
-            </main>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col print:bg-white print:text-black">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { getApplicationRole } from '@/lib/applicationAccess';
@@ -13,11 +13,9 @@ import {
 
 export default function HojaDeVidaActivo() {
     const params = useParams();
-    const router = useRouter();
     const placa = decodeURIComponent(params.placa as string);
 
     const [session, setSession] = useState<any>(null);
-    const [accessChecked, setAccessChecked] = useState(false);
     const [activo, setActivo] = useState<any>(null);
     const [funcionarios, setFuncionarios] = useState<any[]>([]);
     const [movimientos, setMovimientos] = useState<any[]>([]);
@@ -37,10 +35,8 @@ export default function HojaDeVidaActivo() {
 
         const verifyAccess = async (nextSession: typeof session) => {
             if (!active) return;
-            setAccessChecked(false);
             if (!nextSession?.user.id) {
                 setSession(null);
-                setAccessChecked(true);
                 return;
             }
 
@@ -57,8 +53,6 @@ export default function HojaDeVidaActivo() {
                 console.error('No se pudo verificar el acceso a Inventarios:', error);
                 await supabase.auth.signOut();
                 if (active) setSession(null);
-            } finally {
-                if (active) setAccessChecked(true);
             }
         };
 
@@ -73,12 +67,6 @@ export default function HojaDeVidaActivo() {
         };
     }, []);
 
-    useEffect(() => {
-        if (accessChecked && !session) {
-            router.replace(`/inventarioescuela/login?next=/inventarioescuela/${encodeURIComponent(placa)}`);
-        }
-    }, [accessChecked, placa, router, session]);
-
     const fetchDetalle = async () => {
         setLoading(true);
 
@@ -87,7 +75,7 @@ export default function HojaDeVidaActivo() {
             .select(`
         *,
         categorias (nombre),
-        funcionarios (*)
+            funcionarios (id, nombre_completo)
       `)
             .eq('placa', placa)
             .single();
@@ -127,8 +115,8 @@ export default function HojaDeVidaActivo() {
     };
 
     useEffect(() => {
-        if (placa && session) fetchDetalle();
-    }, [placa, session]);
+        if (placa) void fetchDetalle();
+    }, [placa]);
 
     const handleGuardarMovimiento = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -171,14 +159,6 @@ export default function HojaDeVidaActivo() {
 
     const qrUrl = typeof window !== 'undefined' ? window.location.href : '';
 
-    if (!accessChecked || !session) {
-        return (
-            <main className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-400">
-                Verificando permisos de Inventarios...
-            </main>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col print:bg-white print:text-black">
             {/* Header Institucional Superior */}
@@ -212,7 +192,7 @@ export default function HojaDeVidaActivo() {
                             className="flex items-center gap-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition border border-slate-700"
                         >
                             <Lock className="w-4 h-4 text-amber-400" />
-                            Modo Consulta (Iniciar Sesión)
+                            Acceso Admin
                         </Link>
                     )}
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { getApplicationRole } from '@/lib/applicationAccess';
 import {
@@ -29,9 +28,7 @@ interface Activo {
 }
 
 export default function InventarioDashboard() {
-    const router = useRouter();
     const [session, setSession] = useState<any>(null);
-    const [accessChecked, setAccessChecked] = useState(false);
     const [activos, setActivos] = useState<Activo[]>([]);
     const [categorias, setCategorias] = useState<any[]>([]);
     const [funcionarios, setFuncionarios] = useState<any[]>([]);
@@ -64,16 +61,13 @@ export default function InventarioDashboard() {
     const [newNumDoc, setNewNumDoc] = useState('');
     const [newTipoDoc, setNewTipoDoc] = useState('TC');
 
-    // A valid Supabase session alone does not grant Inventory access.
     useEffect(() => {
         let active = true;
 
         const verifyAccess = async (nextSession: typeof session) => {
             if (!active) return;
-            setAccessChecked(false);
             if (!nextSession?.user.id) {
                 setSession(null);
-                setAccessChecked(true);
                 return;
             }
 
@@ -90,8 +84,6 @@ export default function InventarioDashboard() {
                 console.error('No se pudo verificar el acceso a Inventarios:', error);
                 await supabase.auth.signOut();
                 if (active) setSession(null);
-            } finally {
-                if (active) setAccessChecked(true);
             }
         };
 
@@ -105,12 +97,6 @@ export default function InventarioDashboard() {
             subscription.unsubscribe();
         };
     }, []);
-
-    useEffect(() => {
-        if (accessChecked && !session) {
-            router.replace('/inventarioescuela/login?next=/inventarioescuela');
-        }
-    }, [accessChecked, router, session]);
 
     // Cargar datos por lotes acumulativos (Paginación de 1000)
     const fetchActivos = async () => {
@@ -132,7 +118,7 @@ export default function InventarioDashboard() {
                     .range(desde, desde + paso - 1)
                     .order('created_at', { ascending: false });
 
-                if (error) break;
+                if (error) throw error;
 
                 if (data && data.length > 0) {
                     todosLosActivos = [...todosLosActivos, ...data];
@@ -145,7 +131,7 @@ export default function InventarioDashboard() {
 
             setActivos(todosLosActivos);
         } catch (err) {
-            console.error(err);
+            console.error('No se pudo cargar el inventario público:', err);
         } finally {
             setLoading(false);
         }
@@ -153,8 +139,10 @@ export default function InventarioDashboard() {
 
     // Cargar Categorías y Funcionarios
     const fetchAuxiliares = async () => {
-        const { data: catData } = await supabase.from('categorias').select('*').order('nombre');
-        if (catData) {
+        const { data: catData, error: catError } = await supabase.from('categorias').select('*').order('nombre');
+        if (catError) {
+            console.error('No se pudieron cargar las categorías públicas:', catError);
+        } else if (catData) {
             const catsUnicas = catData.filter((c, index, self) =>
                 index === self.findIndex((t) => t.nombre === c.nombre)
             );
@@ -162,8 +150,10 @@ export default function InventarioDashboard() {
             if (catsUnicas.length > 0) setNewCategoriaId(catsUnicas[0].id);
         }
 
-        const { data: funcData } = await supabase.from('funcionarios').select('id, nombre_completo').order('nombre_completo');
-        if (funcData) {
+        const { data: funcData, error: funcError } = await supabase.from('funcionarios').select('id, nombre_completo').order('nombre_completo');
+        if (funcError) {
+            console.error('No se pudieron cargar los funcionarios públicos:', funcError);
+        } else if (funcData) {
             const funcsUnicos = funcData.filter((f, index, self) =>
                 index === self.findIndex((t) => t.nombre_completo === f.nombre_completo)
             );
@@ -173,11 +163,9 @@ export default function InventarioDashboard() {
     };
 
     useEffect(() => {
-        if (session) {
-            fetchActivos();
-            fetchAuxiliares();
-        }
-    }, [session]);
+        void fetchActivos();
+        void fetchAuxiliares();
+    }, []);
 
     const handleCrearServidor = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -188,7 +176,7 @@ export default function InventarioDashboard() {
         try {
             const cedula = serverCedula.trim();
             const { data: servidorExistente, error: consultaError } = await supabase
-                .from('funcionarios')
+                .from('funcionarios_admin')
                 .select('id')
                 .eq('cedula', cedula)
                 .maybeSingle();
@@ -307,14 +295,6 @@ export default function InventarioDashboard() {
     const procesosDevolucion = activos.filter(a => a.estado_activo === 'PROCESO_DEVOLUCION').length;
     const devoluciones = activos.filter(a => a.estado_activo === 'DEVOLUCION').length;
 
-
-    if (!accessChecked || !session) {
-        return (
-            <main className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-400">
-                Verificando permisos de Inventarios...
-            </main>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">

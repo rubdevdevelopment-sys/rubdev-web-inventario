@@ -41,6 +41,8 @@ Las aplicaciones asignan permisos independientes en `public.app_user_access`; es
 
 Primero aplica esa migración una sola vez desde Supabase Dashboard > SQL Editor, conectado al proyecto correcto. Verifica que `rmonroyl@cendoj.ramajudicial.gov.co` ya exista en Authentication > Users y que existan las tablas y el bucket requeridos. La migración reemplaza las políticas RLS de las tablas de estas aplicaciones para cerrar políticas permisivas anteriores; revisa el contenido antes de ejecutarla. No despliegues la interfaz nueva antes de aplicar la migración, porque el inicio de sesión ahora requiere `app_user_access`.
 
+Para Inventarios, aplica después `supabase/migrations/20261009110000_public_inventory_read_admin_write.sql` desde SQL Editor. Esta migración permite consultar los datos del inventario sin iniciar sesión, limita las escrituras a `rmonroyl@cendoj.ramajudicial.gov.co` y `ojulesa@cendoj.ramajudicial.gov.co`, y oculta la cédula en la vista pública de funcionarios. Ambas cuentas deben existir primero en Supabase Auth. La cédula solo se expone a los administradores en la vista `funcionarios_admin`.
+
 ## Funciones seguras de Control Horas
 
 Las Edge Functions crean cuentas y cambian contraseñas únicamente cuando las invoca un administrador asignado a Control Horas. La clave administrativa permanece en el entorno de Supabase y nunca en el navegador.
