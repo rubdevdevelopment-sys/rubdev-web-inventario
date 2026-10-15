@@ -201,7 +201,7 @@ export default function ReportePorResponsable() {
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 print:border-slate-300 pb-6 mb-6 gap-4">
                             <div>
                                 <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 print:text-blue-700">
-                                    Acta de Inventario Individual · RubDev Asset Manager
+                                    RESUMEN DE INVENTARIO INDIVIDUAL
                                 </span>
                                 <h2 className="text-xl sm:text-2xl font-bold text-slate-100 print:text-black mt-1">
                                     {funcionarioActual.nombre_completo}
@@ -298,18 +298,12 @@ export default function ReportePorResponsable() {
                             </table>
                         </div>
 
-                        {/* Firmas en acta física */}
-                        <div className="hidden print:grid grid-cols-2 gap-12 mt-16 pt-8 border-t border-slate-300 text-xs">
+                        {/* Firma en formato impreso */}
+                        <div className="hidden print:grid grid-cols-1 gap-12 mt-16 pt-8 border-t border-slate-300 text-xs">
                             <div className="text-center">
                                 <div className="border-b border-black mb-2 h-12"></div>
                                 <p className="font-bold">{funcionarioActual.nombre_completo}</p>
-                                <p className="text-slate-600">Servidor Responsable / Custodio</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="border-b border-black mb-2 h-12"></div>
-                                <p className="font-bold">RUBÉN DARÍO MONROY LEÓN</p>
-                                <p className="text-slate-600">División Académica / Inventarios</p>
+                                <p className="text-slate-600">Servidor Responsable</p>
                             </div>
                         </div>
                     </div>
