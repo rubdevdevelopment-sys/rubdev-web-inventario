@@ -107,6 +107,12 @@ export default function ReportePorResponsable() {
     const valorTotal = activosResponsable.reduce((acc, item) => acc + (item.valor || 0), 0);
     const enServicio = activosResponsable.filter(a => a.estado_activo === 'EN_SERVICIO').length;
     const devoluciones = activosResponsable.filter(a => a.estado_activo === 'DEVOLUCION').length;
+    const fechaReporte = new Intl.DateTimeFormat('es-CO', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'America/Bogota',
+    }).format(new Date());
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col print:bg-white print:text-black">
@@ -228,6 +234,11 @@ export default function ReportePorResponsable() {
                         <div className="w-full overflow-x-auto">
                             <table className="w-full text-left text-sm min-w-[700px] print:min-w-full print:text-xs">
                                 <thead className="bg-slate-950/80 print:bg-slate-100 text-slate-400 print:text-black text-xs uppercase tracking-wider border-b border-slate-800 print:border-slate-300">
+                                    <tr className="hidden print:table-row">
+                                        <th colSpan={7} className="py-2 px-3 text-right text-[10px] font-medium normal-case tracking-normal text-slate-700">
+                                            Fecha de reporte: {fechaReporte}
+                                        </th>
+                                    </tr>
                                     <tr>
                                         <th className="py-3 px-3">N°</th>
                                         <th className="py-3 px-3">Placa / Código</th>
