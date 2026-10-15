@@ -4,16 +4,6 @@ import { Package, Car, ShieldCheck, ExternalLink } from 'lucide-react';
 export default function Home() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      
-      {/* Banner Institucional Superior */}
-      <div className="w-full bg-[#001f54] border-b border-slate-800 px-4 sm:px-6 py-3 flex justify-center items-center">
-        <img
-          src="/header-ejrlb.png"
-          alt="Rama Judicial - Escuela Judicial Rodrigo Lara Bonilla"
-          className="h-9 sm:h-12 md:h-14 object-contain max-w-full"
-        />
-      </div>
-
       {/* Hero Header */}
       <header className="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-40 backdrop-blur px-6 py-8 text-center">
         <div className="max-w-4xl mx-auto space-y-2">
@@ -141,9 +131,6 @@ export default function Home() {
       {/* Pie de Página */}
       <footer className="w-full py-6 border-t border-slate-800/80 bg-slate-950 text-slate-500 text-xs text-center">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <p className="font-medium">
-            Rama Judicial · Consejo Superior de la Judicatura · Escuela Judicial "Rodrigo Lara Bonilla"
-          </p>
           <p className="font-mono text-[11px] text-slate-400">
             © {new Date().getFullYear()} <strong className="text-slate-200">RubDev.net</strong> ®. Todos los derechos reservados.
           </p>
