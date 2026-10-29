@@ -276,13 +276,22 @@ export default function InventarioDashboard() {
         }
     };
 
+    const normalizeSearchText = (value: string) =>
+        value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+    const searchTerm = normalizeSearchText(search.trim());
     const filteredActivos = activos.filter((item) => {
         const matchesSearch =
-            item.placa.toLowerCase().includes(search.toLowerCase()) ||
-            item.descripcion.toLowerCase().includes(search.toLowerCase()) ||
-            (item.codigo_contable && item.codigo_contable.toLowerCase().includes(search.toLowerCase())) ||
-            (item.funcionarios?.nombre_completo && item.funcionarios.nombre_completo.toLowerCase().includes(search.toLowerCase())) ||
-            (item.estado_activo === 'ALMACEN' && 'almacén'.includes(search.toLowerCase()));
+            !searchTerm ||
+            [
+                item.placa,
+                item.codigo_contable || 'S.C.',
+                item.descripcion,
+                item.numeracion_fisica || 'N/A',
+                item.ubicacion_actual || 'No registrada',
+                item.estado_activo === 'ALMACEN'
+                    ? 'Almacén'
+                    : item.funcionarios?.nombre_completo || 'Sin Asignar'
+            ].some((value) => normalizeSearchText(value).includes(searchTerm));
 
         const matchesCat = categoriaFilter === 'TODAS' || item.categorias?.nombre === categoriaFilter;
         const matchesEstado = estadoFilter === 'TODOS' || item.estado_activo === estadoFilter;
@@ -460,7 +469,7 @@ export default function InventarioDashboard() {
                         <Search className="w-5 h-5 absolute left-3.5 top-3 text-slate-500" />
                         <input
                             type="text"
-                            placeholder="Buscar por placa, descripción, código o responsable..."
+                            placeholder="Buscar por placa, código, descripción, referencia, ubicación o responsable..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-11 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
