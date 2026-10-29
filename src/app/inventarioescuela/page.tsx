@@ -498,12 +498,13 @@ export default function InventarioDashboard() {
                 {/* Tabla de Activos */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="w-full overflow-x-auto">
-                        <table className="w-full text-left text-sm min-w-[700px]">
+                        <table className="w-full text-left text-sm min-w-[850px]">
                             <thead className="bg-slate-950/80 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
                                 <tr>
                                     <th className="py-3.5 px-4">Placa / Código</th>
                                     <th className="py-3.5 px-4">Descripción del Activo</th>
                                     <th className="py-3.5 px-4">REFERENCIA</th>
+                                    <th className="py-3.5 px-4">Ubicación Actual</th>
                                     <th className="py-3.5 px-4">Responsable / Custodio</th>
                                     <th className="py-3.5 px-4 text-right">Acción</th>
                                 </tr>
@@ -511,13 +512,13 @@ export default function InventarioDashboard() {
                             <tbody className="divide-y divide-slate-800/60">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={5} className="py-12 text-center text-slate-500">
+                                        <td colSpan={6} className="py-12 text-center text-slate-500">
                                             Cargando inventario desde Supabase...
                                         </td>
                                     </tr>
                                 ) : filteredActivos.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-12 text-center text-slate-500">
+                                        <td colSpan={6} className="py-12 text-center text-slate-500">
                                             No se encontraron activos que coincidan con la búsqueda.
                                         </td>
                                     </tr>
@@ -533,6 +534,9 @@ export default function InventarioDashboard() {
                                             </td>
                                             <td className="py-3.5 px-4 text-xs text-slate-400 whitespace-nowrap">
                                                 {activo.numeracion_fisica || 'N/A'}
+                                            </td>
+                                            <td className="py-3.5 px-4 text-xs text-slate-300">
+                                                {activo.ubicacion_actual || 'No registrada'}
                                             </td>
                                             <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
                                                 {activo.estado_activo === 'ALMACEN' ? 'Almacén' : activo.funcionarios?.nombre_completo || 'Sin Asignar'}
