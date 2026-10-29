@@ -246,6 +246,22 @@ export default function HojaDeVidaActivo() {
                             </div>
 
                             <div className="flex items-center gap-3">
+                                <Tag className="w-5 h-5 text-blue-400 shrink-0" />
+                                <div>
+                                    <p className="text-xs text-slate-400">Referencia</p>
+                                    <p className="font-semibold">{activo.numeracion_fisica || 'N/A'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <Tag className="w-5 h-5 text-blue-400 shrink-0" />
+                                <div>
+                                    <p className="text-xs text-slate-400">Modelo</p>
+                                    <p className="font-semibold">{activo.modelo || 'N/A'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
                                 <User className="w-5 h-5 text-emerald-400 shrink-0" />
                                 <div>
                                     <p className="text-xs text-slate-400">Servidor Responsable Actual</p>
@@ -259,6 +275,11 @@ export default function HojaDeVidaActivo() {
                                     <p className="text-xs text-slate-400">Ubicación Actual</p>
                                     <p className="font-semibold">{activo.ubicacion_actual}</p>
                                 </div>
+                            </div>
+
+                            <div className="border-t border-slate-800 print:border-slate-300 pt-5">
+                                <p className="text-xs text-slate-400 mb-1">Observaciones</p>
+                                <p className="font-semibold whitespace-pre-wrap">{activo.observaciones || 'Sin observaciones'}</p>
                             </div>
                         </div>
 

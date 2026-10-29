@@ -56,6 +56,13 @@ def obtener_o_crear_funcionario(nombre_raw, source_name_raw):
     return list(func_map.values())[0]
 
 
+def texto_opcional(valor):
+    if pd.isna(valor):
+        return None
+    texto = str(valor).strip()
+    return texto if texto and texto.lower() != 'nan' else None
+
+
 # 4. Procesar activos
 activos_a_insertar = []
 
@@ -100,9 +107,11 @@ for idx, row in df.iterrows():
         "codigo_contable": str(row.get('codigo') or row.get('codigo_articulo') or '').strip(),
         "descripcion": desc,
         "placa": placa,
+        "numeracion_fisica": texto_opcional(row.get('numeracion_fisica')),
         "serie": str(row.get('serie', '')).strip() if pd.notnull(row.get('serie')) and str(row.get('serie')).lower() != 'nan' else None,
         "marca": str(row.get('marca', '')).strip() if pd.notnull(row.get('marca')) and str(row.get('marca')).lower() != 'nan' else None,
         "modelo": str(row.get('modelo', '')).strip() if pd.notnull(row.get('modelo')) and str(row.get('modelo')).lower() != 'nan' else None,
+        "observaciones": texto_opcional(row.get('observaciones')),
         "categoria_id": cat_id,
         "valor": valor,
         "num_documento": str(row.get('numero_documento') or row.get('codigo_externo') or '').strip(),
