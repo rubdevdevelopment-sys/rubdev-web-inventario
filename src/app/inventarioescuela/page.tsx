@@ -498,7 +498,15 @@ export default function InventarioDashboard() {
                 {/* Tabla de Activos */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="w-full overflow-x-auto">
-                        <table className="w-full text-left text-sm min-w-[850px]">
+                        <table className="w-full table-fixed text-left text-sm min-w-[1200px]">
+                            <colgroup>
+                                <col className="w-[13%]" />
+                                <col className="w-[25%]" />
+                                <col className="w-[10%]" />
+                                <col className="w-[22%]" />
+                                <col className="w-[20%]" />
+                                <col className="w-[10%]" />
+                            </colgroup>
                             <thead className="bg-slate-950/80 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
                                 <tr>
                                     <th className="py-3.5 px-4">Placa / Código</th>
@@ -529,16 +537,18 @@ export default function InventarioDashboard() {
                                                 <span className="font-mono font-bold text-blue-400 block">{activo.placa}</span>
                                                 <span className="text-xs text-slate-500">{activo.codigo_contable || 'S.C.'}</span>
                                             </td>
-                                            <td className="py-3.5 px-4 font-medium text-slate-200">
+                                            <td className="py-3.5 px-4 font-medium text-slate-200 break-words">
                                                 {activo.descripcion}
                                             </td>
-                                            <td className="py-3.5 px-4 text-xs text-slate-400 whitespace-nowrap">
-                                                {activo.numeracion_fisica || 'N/A'}
+                                            <td className="py-3.5 px-4 text-xs text-slate-400">
+                                                <span className="block truncate" title={activo.numeracion_fisica || 'N/A'}>
+                                                    {activo.numeracion_fisica || 'N/A'}
+                                                </span>
                                             </td>
-                                            <td className="py-3.5 px-4 text-xs text-slate-300">
+                                            <td className="py-3.5 px-4 text-xs text-slate-300 break-words">
                                                 {activo.ubicacion_actual || 'No registrada'}
                                             </td>
-                                            <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
+                                            <td className="py-3.5 px-4 text-slate-300 break-words">
                                                 {activo.estado_activo === 'ALMACEN' ? 'Almacén' : activo.funcionarios?.nombre_completo || 'Sin Asignar'}
                                             </td>
                                             <td className="py-3.5 px-4 text-right whitespace-nowrap">
